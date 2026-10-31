@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rakadee - ประมูลสินค้าออนไลน์</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container">
+    <h1>ประมูลสินค้าออนไลน์</h1>
+    <p class="muted">หน้าแรก (Programmer): รายการใกล้จบและใหม่ล่าสุดจะแสดงที่นี่</p>
+    <div class="card">
+      <strong>สถานะระบบ:</strong> <span id="health">กำลังตรวจสอบ...</span>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    api.get('/health')
+      .then((d) => { document.getElementById('health').textContent = `API ${d.status}, Database ${d.database}`; })
+      .catch((e) => { document.getElementById('health').textContent = e.message; });
+  </script>
+</body>
+</html>

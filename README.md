@@ -60,3 +60,66 @@ docs/       Decision Log, ERD, API Spec
 | SA | Auth, Wallet, Payment, Escrow, ERD, API Spec |
 | QA | ลงสินค้า, อนุมัติสินค้า, Dispute, บทลงโทษ, จัดการผู้ใช้, Test Plan |
 | Programmer | Auction Engine, หน้าแรก, ค้นหา, รายละเอียดสินค้า, Watchlist |
+
+
+
+## System Architecture & Sequence Diagram
+
+### 1. โครงสร้างระบบ (Actors & Components)
+1. **`User / Browser`** (ฝั่งผู้ใช้: ผู้ซื้อ/ผู้ขาย)
+2. **`Admin Dashboard`** (ฝั่งแอดมิน)
+3. **`API Server`** (หลังบ้าน / Backend Controller)
+4. **`Worker`** (ระบบรันอัตโนมัติเบื้องหลัง เช่น เช็คเวลาหมดประมูล)
+5. **`Database`** (ฐานข้อมูลหลักของระบบ)
+
+### 2. ลำดับขั้นตอนการทำงานของระบบ (Sequence Flow)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User / Browser
+    participant API as API Server
+    actor Admin as Admin Dashboard
+    participant Worker as Worker (Cron Job)
+    participant DB as Database
+
+    %% เฟส 0: KYC & Role Assignment
+    Note over User, DB: เฟส 0: KYC Verification & Role
+    User->>API: อัปโหลดรูปบัตรประชาชน
+    API->>DB: บันทึกข้อมูลลงตาราง kyc_verifications (สถานะ PENDING)
+    Admin->>API: ตรวจสอบความถูกต้องและกดอนุมัติ
+    API->>DB: อัปเดตตาราง KYC เป็น APPROVED และเปลี่ยน role ใน users เป็น BIDDER
+    Note over User, DB: หากต้องการขาย: ส่งคำขอเปิดร้านค้าไปที่ seller_profiles รอแอดมินอนุมัติ
+
+    %% เฟส 1: Bidding
+    Note over User, DB: เฟส 1: Bidding (ประมูลสินค้า)
+    User->>API: ยิง API ส่งยอดประมูล
+    API->>DB: เช็ก listings และ wallets -> บันทึก bids & อัปเดต current_price
+
+    %% เฟส 2: Auto-Closing & Order Creation
+    Note over Worker, DB: เฟส 2: Auto-Closing (Worker ทำงานทุกนาที)
+    Worker->>DB: กวาดหา listings ที่หมดเวลา (end_time <= NOW)
+    DB->>DB: เปลี่ยนสถานะเป็น ENDED + ดึง Bid สูงสุดสร้าง orders (PENDING_PAYMENT) + คำนวณค่าธรรมเนียม 5% ลง platform_fees
+
+    %% เฟส 3-4: Payment & Admin Verification
+    Note over User, DB: เฟส 3-4: Payment & Verification
+    User->>API: โอนเงินและแนบสลิป
+    API->>DB: บันทึก payments (PENDING_VERIFICATION)
+    Admin->>API: ตรวจสลิปหลังบ้านและกดอนุมัติ (SUCCESS)
+    API->>DB: เปลี่ยน order เป็น PENDING_SHIPPING + พักเงินใน escrows (HELD)
+
+    %% เฟส 5: Shipping
+    Note over User, DB: เฟส 5: Shipping (จัดส่งสินค้า)
+    User->>API: ผู้ขายกรอกเลขพัสดุ
+    API->>DB: บันทึก shipments + เปลี่ยนสถานะ order เป็น SHIPPED
+
+    %% เฟส 6: Delivery & Completion
+    Note over User, DB: เฟส 6: Delivery & Completion
+    User->>API: กดยืนยันรับสินค้า (หรือครบกำหนด 7 วัน)
+    API->>DB: เปลี่ยน order เป็น COMPLETED + เปิดสิทธิ์รีวิวผ่าน reviews
+
+    %% เฟส 7: Escrow Release & Payout
+    Note over Worker, DB: เฟส 7: Escrow Release & Payout
+    Worker->>DB: เมื่อ order เป็น COMPLETED -> ปลดล็อก escrows เป็น RELEASED
+    DB->>DB: หักค่าธรรมเนียม โอนเงินเข้า wallets + wallets_transactions
+```

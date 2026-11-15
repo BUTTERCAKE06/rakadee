@@ -23,3 +23,58 @@
 | ทุกเคส | ชื่อ endpoint `/auctions`, error code `ERR_*`, สถานะตัวพิมพ์ใหญ่ | ใช้ path, error code และค่าสถานะตาม `docs/api-spec/api-spec.md` |
 
 บัญชีทดสอบและข้อมูลตั้งต้นอยู่ใน `backend/seeds/001_seed.sql` ย่อเวลา (48 ชม., 7 วัน ฯลฯ) ผ่านตัวแปรใน `backend/.env` ตาม `.env.example`
+
+## อัพเดทงาน
+
+#### ไฟล์ที่สร้างใหม่
+| ไฟล์ | หน้าที่ |
+|---|---|
+| `frontend/pages/seller/open-shop.html` + `js/seller/open-shop.js` | ฟอร์มเปิดร้าน (3.1); redirect ถ้าเป็น seller แล้ว |
+| `frontend/pages/seller/listings.html` + `js/seller/listings.js` | "สินค้าของฉัน" แท็บ 6 สถานะ, cancel in-line (4.9/4.8) |
+| `frontend/pages/seller/listing-form.html` + `js/seller/listing-form.js` | ฟอร์มลงสินค้าแบบ single-page 4 ส่วน, upload รูป, preview, validate ครบ 3.3, save draft/submit/cancel (4.2–4.8) |
+| `frontend/pages/admin/listings.html` + `js/admin/listings.js` | ตารางรออนุมัติ + แท็บสถานะ + ค้นหา (4.10) |
+| `frontend/pages/admin/listing-detail.html` + `js/admin/listing-detail.js` | รายละเอียดเต็ม + approve + reject modal (4.11–4.13) |
+| `frontend/css/admin.css` | สไตล์โครงหน้า Admin |
+| `frontend/js/admin/admin-shell.js` | สร้างโครงหน้า Admin ให้ทุกหน้า admin (ใช้แทน `layout.js` ที่ยังไม่ได้ตกแต่ง สามารถแทนได้ถ้าทำมาเพิ่มแล้ว) |
+| `backend/src/services/seller.service.js` | openShop, getMyProfile, updateMyProfile, getPublicProfile |
+| `backend/src/services/listing.service.js` | getCategories, createListing, updateListing, addImages, deleteImage, setCover, submitListing, cancelListing, getMyListings + serializeListingDetail (ListingDetail ของ QA) |
+| `backend/src/services/admin.listing.service.js` | adminListListings, adminGetListing, approveListing, rejectListing |
+| `backend/src/controllers/seller.controller.js` | controller 3.1–3.4 |
+| `backend/src/controllers/listing.controller.js` | controller 4.1–4.9 |
+| `backend/src/controllers/admin.listing.controller.js` | controller 4.10–4.13 |
+| `backend/src/routes/seller.routes.js` | mount seller profile + 4.9 |
+| `backend/src/routes/listing.routes.js` | mount 4.2–4.8 |
+| `backend/src/routes/admin.listing.routes.js` | mount 4.10–4.13 |
+| `backend/src/utils/parseId.js` | guard URL param ให้เป็น integer บวก → 400 ถ้าว่างหรือไม่ใช่เลข |
+
+#### Endpoint ที่ทำแล้ว
+| # | Method | Path | สถานะ |
+|---|---|---|---|
+| 3.1 | POST | `/api/seller/profile` | ✅ |
+| 3.2 | GET | `/api/seller/profile` | ✅ |
+| 3.3 | PUT | `/api/seller/profile` | ✅ |
+| 3.4 | GET | `/api/sellers/:userId` | ✅ |
+| 4.1 | GET | `/api/categories` | ✅ |
+| 4.2 | POST | `/api/listings` | ✅ |
+| 4.3 | PUT | `/api/listings/:id` | ✅ |
+| 4.4 | POST | `/api/listings/:id/images` | ✅ |
+| 4.5 | DELETE | `/api/listings/:id/images/:imageId` | ✅ |
+| 4.6 | POST | `/api/listings/:id/images/:imageId/cover` | ✅ |
+| 4.7 | POST | `/api/listings/:id/submit` | ✅ |
+| 4.8 | POST | `/api/listings/:id/cancel` | ✅ |
+| 4.9 | GET | `/api/seller/listings` | ✅ |
+| 4.10 | GET | `/api/admin/listings` | ✅ |
+| 4.11 | GET | `/api/admin/listings/:id` | ✅ |
+| 4.12 | POST | `/api/admin/listings/:id/approve` | ✅ |
+| 4.13 | POST | `/api/admin/listings/:id/reject` | ✅ |
+
+## FE
+เปิดร้าน: `/pages/seller/open-shop.html` (ใช้ token buyer)
+ลงสินค้า: `/pages/seller/listing-form.html` (ใช้ token seller)
+สินค้าของฉัน: `/pages/seller/listings.html` (ใช้ token seller)
+Admin ตรวจสอบ: `/pages/admin/listings.html` (ใช้ token admin)
+Admin รายละเอียด: `/pages/admin/listing-detail.html` (ใช้ token admin)
+
+## ปัญหา
+สาเหตุ กดแก้ไขสินค้า แล้วข้อมูลที่ควรมีไม่ขึ้น เพราะต้องใช้ API ของ Programmer
+5.2	GET	/api/listings/:id	public	รายละเอียดสินค้า 

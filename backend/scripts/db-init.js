@@ -13,6 +13,7 @@ async function main() {
   const { database, ...server } = config.db;
   const conn = await mysql.createConnection({ ...server, multipleStatements: true });
   try {
+    await conn.query("SET time_zone = '+00:00'");
     await conn.query(`CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     await conn.query(`USE \`${database}\``);
 

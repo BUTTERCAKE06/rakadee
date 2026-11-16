@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ลงสินค้า — Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <style>
+    /* Section navigation */
+    .section-nav { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:28px; }
+    .section-nav a { padding:6px 14px; border-radius:999px; border:1px solid var(--color-border);
+      font-size:14px; color:var(--color-muted); background:var(--color-surface); }
+    .section-nav a:hover { border-color:var(--color-primary); color:var(--color-primary); text-decoration:none; }
+
+    /* Section cards */
+    .form-section { background:var(--color-surface); border:1px solid var(--color-border);
+      border-radius:var(--radius); padding:24px; margin-bottom:24px; }
+    .form-section h2 { margin:0 0 20px; font-size:18px; display:flex; align-items:center; gap:8px; }
+    .form-section h2 .sec-num { background:var(--color-primary); color:#fff; border-radius:50%;
+      width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-size:14px; }
+
+    /* Image upload */
+    .img-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; margin-bottom:14px; }
+    .img-thumb { position:relative; border-radius:var(--radius); overflow:hidden; border:2px solid var(--color-border); aspect-ratio:1; }
+    .img-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+    .img-thumb.is-cover { border-color:var(--color-accent); }
+    .img-thumb .cover-badge { position:absolute; top:4px; left:4px; background:var(--color-accent);
+      color:#fff; font-size:11px; padding:2px 6px; border-radius:999px; }
+    .img-thumb .img-actions { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,.55);
+      display:flex; gap:4px; padding:4px; justify-content:center; }
+    .img-thumb .img-actions button { border:none; cursor:pointer; border-radius:4px; font-size:12px;
+      padding:3px 7px; }
+    .img-thumb .img-actions .btn-cover { background:#fff; color:var(--color-text); }
+    .img-thumb .img-actions .btn-del { background:var(--color-danger); color:#fff; }
+    .upload-box { border:2px dashed var(--color-border); border-radius:var(--radius); padding:28px;
+      text-align:center; cursor:pointer; color:var(--color-muted); transition:border-color .2s; }
+    .upload-box:hover { border-color:var(--color-primary); color:var(--color-primary); }
+    .upload-box input[type=file] { display:none; }
+
+    /* Price row */
+    .price-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:520px){ .price-row { grid-template-columns:1fr; } }
+
+    /* Duration radio */
+    .duration-group { display:flex; gap:12px; flex-wrap:wrap; }
+    .duration-group label { display:flex; align-items:center; gap:6px; cursor:pointer;
+      padding:10px 18px; border:1px solid var(--color-border); border-radius:var(--radius);
+      font-weight:400; }
+    .duration-group input[type=radio]:checked + span { font-weight:600; color:var(--color-primary); }
+    .duration-group label:has(input:checked) { border-color:var(--color-primary); background:#eff6ff; }
+
+    /* Action bar */
+    .action-bar { background:var(--color-surface); border:1px solid var(--color-border);
+      border-radius:var(--radius); padding:16px 20px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .action-bar .spacer { flex:1; }
+
+    /* Preview modal */
+    .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100;
+      overflow-y:auto; padding:24px; }
+    .modal-backdrop.open { display:flex; align-items:flex-start; justify-content:center; }
+    .modal { background:var(--color-surface); border-radius:var(--radius); padding:28px;
+      max-width:680px; width:100%; margin:auto; position:relative; }
+    .modal-close { position:absolute; top:16px; right:16px; background:none; border:none;
+      font-size:22px; cursor:pointer; color:var(--color-muted); }
+    .preview-images { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:16px; }
+    .preview-images img { height:120px; border-radius:var(--radius); flex-shrink:0; }
+    .preview-row { display:flex; justify-content:space-between; border-bottom:1px solid var(--color-border); padding:8px 0; font-size:15px; }
+    .preview-row span:first-child { color:var(--color-muted); }
+
+    .lock-notice { background:#fffbeb; border:1px solid var(--color-warning); border-radius:var(--radius);
+      padding:12px 16px; color:var(--color-warning); margin-bottom:16px; font-size:14px; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container" style="max-width:760px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+      <h1 id="page-title" style="margin:0;">ลงสินค้าใหม่</h1>
+      <a href="/pages/seller/listings.html" class="btn" style="font-size:14px;">← กลับ</a>
+    </div>
+
+    <div id="alert-area" style="margin-bottom:12px;"></div>
+
+    <!-- Section navigation -->
+    <nav class="section-nav" aria-label="ข้ามส่วน">
+      <a href="#sec-info">1. ข้อมูลสินค้า</a>
+      <a href="#sec-images">2. รูปภาพ</a>
+      <a href="#sec-shipping">3. จัดส่ง</a>
+      <a href="#sec-auction">4. เงื่อนไขประมูล</a>
+    </nav>
+
+    <!-- ส่วน 1: ข้อมูลสินค้า -->
+    <section class="form-section" id="sec-info">
+      <h2><span class="sec-num">1</span> ข้อมูลสินค้า</h2>
+
+      <div class="form-group">
+        <label for="title">ชื่อสินค้า <span style="color:var(--color-danger)">*</span></label>
+        <input type="text" id="title" maxlength="150" placeholder="ระบุชื่อ ยี่ห้อ รุ่นให้ชัดเจน" />
+        <span class="field-error" id="err-title"></span>
+      </div>
+
+      <div class="price-row">
+        <div class="form-group">
+          <label for="categoryParent">หมวดหลัก <span style="color:var(--color-danger)">*</span></label>
+          <select id="categoryParent"><option value="">— เลือกหมวดหลัก —</option></select>
+          <span class="field-error" id="err-categoryParent"></span>
+        </div>
+        <div class="form-group">
+          <label for="categoryId">หมวดย่อย <span style="color:var(--color-danger)">*</span></label>
+          <select id="categoryId" disabled><option value="">— เลือกหมวดย่อย —</option></select>
+          <span class="field-error" id="err-categoryId"></span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">รายละเอียดสินค้า <span style="color:var(--color-danger)">*</span></label>
+        <textarea id="description" rows="5" maxlength="5000" placeholder="อธิบายคุณสมบัติ สเปก ที่มา หรือประวัติการใช้งาน"></textarea>
+        <span class="field-error" id="err-description"></span>
+      </div>
+
+      <div class="form-group">
+        <label for="includedItems">สิ่งที่ได้รับ</label>
+        <input type="text" id="includedItems" maxlength="300" placeholder="เช่น ตัวสินค้า + กล่อง + คู่มือ" />
+      </div>
+
+      <div class="form-group">
+        <label for="itemCondition">สภาพสินค้า <span style="color:var(--color-danger)">*</span></label>
+        <select id="itemCondition">
+          <option value="">— เลือกสภาพ —</option>
+          <option value="new">ของใหม่</option>
+          <option value="used_good">มือสองสภาพดี</option>
+          <option value="defective">มือสองมีตำหนิ</option>
+        </select>
+        <span class="field-error" id="err-itemCondition"></span>
+      </div>
+
+      <div class="form-group" id="defect-group" style="display:none;">
+        <label for="defectDetail">รายละเอียดตำหนิ <span style="color:var(--color-danger)">*</span></label>
+        <textarea id="defectDetail" rows="3" maxlength="1000" placeholder="อธิบายตำหนิให้ครบถ้วน เช่น รอยขีดข้วนที่มุม..."></textarea>
+        <span class="field-error" id="err-defectDetail"></span>
+      </div>
+    </section>
+
+    <!-- ส่วน 2: รูปภาพ -->
+    <section class="form-section" id="sec-images">
+      <h2><span class="sec-num">2</span> รูปภาพ</h2>
+
+      <div id="images-lock-notice" class="lock-notice" style="display:none;">
+        💡 กรุณา<strong>บันทึกร่าง</strong>ก่อน เพื่อเปิดใช้งานการอัปโหลดรูปภาพ
+      </div>
+
+      <div id="img-grid" class="img-grid"></div>
+
+      <label id="upload-box" class="upload-box" style="display:none;">
+        <input type="file" id="file-input" accept=".jpg,.jpeg,.png" multiple />
+        <div style="font-size:32px;margin-bottom:8px;">📷</div>
+        <div>คลิกเพื่ออัปโหลดรูปภาพ</div>
+        <div style="font-size:13px;margin-top:4px;">jpg / jpeg / png ไม่เกิน 5 MB ต่อรูป สูงสุด 8 รูป</div>
+      </label>
+
+      <p id="img-count" class="muted" style="font-size:13px;margin-top:8px;"></p>
+      <span class="field-error" id="err-images"></span>
+    </section>
+
+    <!-- ส่วน 3: จัดส่ง -->
+    <section class="form-section" id="sec-shipping">
+      <h2><span class="sec-num">3</span> การจัดส่ง</h2>
+
+      <div class="price-row">
+        <div class="form-group">
+          <label for="shippingFee">ค่าจัดส่ง (บาท) <span style="color:var(--color-danger)">*</span></label>
+          <input type="number" id="shippingFee" min="0" step="1" placeholder="0 = ฟรีค่าส่ง" />
+          <span class="field-error" id="err-shippingFee"></span>
+        </div>
+        <div class="form-group">
+          <label for="originProvince">จังหวัดต้นทาง <span style="color:var(--color-danger)">*</span></label>
+          <select id="originProvince"><option value="">— เลือกจังหวัด —</option></select>
+          <span class="field-error" id="err-originProvince"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ส่วน 4: เงื่อนไขประมูล -->
+    <section class="form-section" id="sec-auction">
+      <h2><span class="sec-num">4</span> เงื่อนไขประมูล</h2>
+
+      <div class="price-row">
+        <div class="form-group">
+          <label for="startPrice">ราคาเริ่มต้น (บาท) <span style="color:var(--color-danger)">*</span></label>
+          <input type="number" id="startPrice" min="1" step="1" placeholder="เช่น 100" />
+          <span class="field-error" id="err-startPrice"></span>
+        </div>
+        <div class="form-group">
+          <label for="bidIncrement">ขั้นต่ำการเพิ่มราคา (บาท) <span style="color:var(--color-danger)">*</span></label>
+          <input type="number" id="bidIncrement" min="1" step="1" placeholder="เช่น 50" />
+          <span class="field-error" id="err-bidIncrement"></span>
+        </div>
+      </div>
+
+      <div class="price-row">
+        <div class="form-group">
+          <label for="reservePrice">ราคาขั้นต่ำที่ยอมขาย (บาท) <span class="muted" style="font-weight:400;">(ไม่บังคับ)</span></label>
+          <input type="number" id="reservePrice" min="0" step="1" placeholder="เป็นความลับ ผู้ซื้อไม่เห็น" />
+          <span class="field-error" id="err-reservePrice"></span>
+        </div>
+        <div class="form-group">
+          <label for="buyNowPrice">ราคาซื้อทันที (บาท) <span class="muted" style="font-weight:400;">(ไม่บังคับ)</span></label>
+          <input type="number" id="buyNowPrice" min="0" step="1" placeholder="ผู้ซื้อสามารถซื้อได้ทันที" />
+          <span class="field-error" id="err-buyNowPrice"></span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>ระยะเวลาประมูล <span style="color:var(--color-danger)">*</span></label>
+        <div class="duration-group">
+          <label><input type="radio" name="durationDays" value="1" /><span>1 วัน</span></label>
+          <label><input type="radio" name="durationDays" value="3" /><span>3 วัน</span></label>
+          <label><input type="radio" name="durationDays" value="7" /><span>7 วัน</span></label>
+        </div>
+        <span class="field-error" id="err-durationDays"></span>
+      </div>
+    </section>
+
+    <!-- Action bar -->
+    <div class="action-bar">
+      <button id="btn-cancel-listing" class="btn btn-danger" style="display:none;">ยกเลิกสินค้า</button>
+      <div class="spacer"></div>
+      <button id="btn-draft" class="btn">💾 บันทึกร่าง</button>
+      <button id="btn-preview" class="btn" disabled>👁 ดูตัวอย่าง</button>
+      <button id="btn-submit" class="btn btn-primary" disabled>📤 ส่งตรวจ</button>
+    </div>
+  </main>
+
+  <!-- Preview Modal -->
+  <div class="modal-backdrop" id="preview-modal" role="dialog" aria-modal="true" aria-label="ตัวอย่างสินค้า">
+    <div class="modal">
+      <button class="modal-close" id="btn-close-preview" aria-label="ปิด">✕</button>
+      <h2 style="margin-top:0;">ตัวอย่างสินค้า</h2>
+      <div id="preview-content"></div>
+      <div style="margin-top:20px;text-align:right;">
+        <button class="btn" id="btn-close-preview2">ปิด</button>
+        <button class="btn btn-primary" id="btn-submit-from-preview">📤 ส่งตรวจ</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/seller/listing-form.js"></script>
+</body>
+</html>

@@ -40,4 +40,9 @@ async function ping() {
   }
 }
 
-module.exports = { pool, withTransaction, ping };
+// query() — shorthand สำหรับ pool.query() ใช้ใน service ที่ไม่ต้องการ transaction
+async function query(sql, params) {
+  return pool.query(sql, params);
+}
+
+module.exports = { pool, query, withTransaction, ping };

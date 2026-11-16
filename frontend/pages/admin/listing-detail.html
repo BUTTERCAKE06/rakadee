@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>รายละเอียดสินค้า — Admin | Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+  <style>
+    .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:600px){ .detail-grid { grid-template-columns:1fr; } }
+
+    .detail-row { display:flex; flex-direction:column; gap:2px; padding:10px 0; border-bottom:1px solid var(--color-border); }
+    .detail-row .label { font-size:13px; color:var(--color-muted); }
+    .detail-row .value { font-size:15px; }
+
+    .img-gallery { display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
+    .img-gallery img { height:140px; border-radius:var(--radius); border:2px solid var(--color-border); flex-shrink:0; cursor:zoom-in; }
+    .img-gallery img.is-cover { border-color:var(--color-accent); }
+
+    /* Reject modal */
+    .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100; align-items:center; justify-content:center; padding:24px; }
+    .modal-backdrop.open { display:flex; }
+    .modal { background:var(--color-surface); border-radius:var(--radius); padding:28px; max-width:480px; width:100%; }
+    .modal h3 { margin:0 0 16px; }
+
+    .action-bar { display:flex; gap:12px; flex-wrap:wrap; margin-top:28px; align-items:center; padding:20px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius); }
+    .action-bar .spacer { flex:1; }
+
+    .reject-banner { background:#fef2f2; border:1px solid var(--color-danger); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; }
+    .reject-banner strong { color:var(--color-danger); }
+  </style>
+</head>
+<body class="admin-page">
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+
+  <div class="admin-main">
+  <div class="admin-topbar" id="admin-topbar"></div>
+
+  <main class="admin-content" style="max-width:920px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+      <a href="/pages/admin/listings.html" class="btn" style="font-size:14px;">← กลับ</a>
+      <h1 id="page-title" style="margin:0;flex:1;">รายละเอียดสินค้า</h1>
+      <span id="status-badge" class="badge"></span>
+    </div>
+
+    <div id="alert-area" style="margin-bottom:16px;"></div>
+    <div id="main-content">
+      <div class="empty-state"><p>กำลังโหลด...</p></div>
+    </div>
+
+    <!-- Action bar (แสดงเฉพาะ pending_review) -->
+    <div id="action-bar" class="action-bar" style="display:none;">
+      <div class="spacer"></div>
+      <button id="btn-reject" class="btn btn-danger">✕ ปฏิเสธ</button>
+      <button id="btn-approve" class="btn btn-primary">✓ อนุมัติ</button>
+    </div>
+  </main>
+  </div>
+
+  <!-- Reject Modal -->
+  <div class="modal-backdrop" id="reject-modal" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h3>ปฏิเสธสินค้า</h3>
+      <p class="muted" style="margin-top:0;">กรุณาระบุเหตุผลเพื่อแจ้งให้ผู้ขายปรับปรุงแก้ไข</p>
+      <div class="form-group">
+        <label for="reject-reason">เหตุผลการปฏิเสธ <span style="color:var(--color-danger)">*</span> <span class="muted" style="font-weight:400;">(5–500 ตัวอักษร)</span></label>
+        <textarea id="reject-reason" rows="4" maxlength="500" placeholder="เช่น: รูปภาพไม่ชัดเจน กรุณาอัปโหลดรูปใหม่ที่มีความละเอียดสูงกว่านี้"></textarea>
+        <span class="field-error" id="err-reason"></span>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
+        <button class="btn" id="btn-cancel-reject">ยกเลิก</button>
+        <button class="btn btn-danger" id="btn-confirm-reject">ยืนยันการปฏิเสธ</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/admin-shell.js"></script>
+  <script src="/js/admin/listing-detail.js"></script>
+</body>
+</html>

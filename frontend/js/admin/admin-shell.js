@@ -4,10 +4,12 @@
 'use strict';
 
 const ADMIN_NAV = [
+  { href: '/pages/admin/dashboard.html', label: 'ภาพรวมระบบ', match: ['/pages/admin/dashboard.html'] },
   { href: '/pages/admin/listings.html', label: 'ตรวจสอบและอนุมัติสินค้า',
     match: ['/pages/admin/listings.html', '/pages/admin/listing-detail.html'] },
   { href: '/pages/admin/payments.html', label: 'ตรวจสอบการชำระเงิน', match: ['/pages/admin/payments.html'] },
   { href: '/pages/admin/disputes.html', label: 'จัดการข้อพิพาทและคำร้อง', match: ['/pages/admin/disputes.html'] },
+  { href: '/pages/admin/audit-logs.html', label: 'บันทึกการทำงาน (Audit Log)', match: ['/pages/admin/audit-logs.html'] },
 ];
 
 const ICON_SEARCH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
@@ -72,9 +74,9 @@ function renderTopbar(user) {
     location.href = '/pages/admin/listings.html' + (q ? `?q=${encodeURIComponent(q)}` : '');
   });
 
-  // หัวใจ = แจ้งเตือน (API แจ้งเตือนเป็นงานของ PM ยังไม่มี จึงเป็นไอคอนเปล่า จุดแดงซ่อนไว้จนกว่าจะเรียก adminShell.setUnread(n))
-  const bell = mk('button', 'admin-icon-btn');
-  bell.type = 'button';
+  // หัวใจ = แจ้งเตือน → หน้าการแจ้งเตือน จุดแดงแสดงเมื่อมีที่ยังไม่อ่าน (PM: api-spec 11.2)
+  const bell = mk('a', 'admin-icon-btn');
+  bell.href = '/pages/notifications.html';
   bell.title = 'แจ้งเตือน';
   bell.setAttribute('aria-label', 'แจ้งเตือน');
   bell.insertAdjacentHTML('beforeend', ICON_HEART);
@@ -115,6 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   renderSidebar(user);
   renderTopbar(user);
+  if (user) api.get('/notifications/unread-count').then((d) => window.adminShell.setUnread(d.unreadCount)).catch(() => {});
   window.currentUser = user;
   document.dispatchEvent(new CustomEvent('user:ready', { detail: user }));
 });

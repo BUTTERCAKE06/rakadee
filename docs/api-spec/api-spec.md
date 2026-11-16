@@ -20,6 +20,7 @@
 - Login แล้วได้ `token` ส่งทุก request เป็น header `Authorization: Bearer <token>`
 - Token อายุ 7 วัน เก็บ hash ในตาราง `sessions` logout/เปลี่ยนรหัส/รีเซ็ตรหัส = `revoked_at`
 - Socket.IO ส่ง token ใน `io({ auth: { token } })` (หัวข้อ 12)
+- ระหว่างที่หน้า login ยังไม่พร้อม ออก token ให้บัญชีทดสอบได้ด้วย `npm run dev:token -- <username>` (ใน `backend/`) ใช้ในเครื่องตัวเองเท่านั้น
 
 ### 0.3 สิทธิ์ (Role) และสถานะบัญชี
 
@@ -508,7 +509,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 
 | # | Method | Path | สิทธิ์ | ทำอะไร |
 | --- | --- | --- | --- | --- |
-| 11.1 | GET | `/api/notifications` | login | รายการแจ้งเตือน (`?unread=true`) |
+| 11.1 | GET | `/api/notifications` | login | รายการแจ้งเตือน (`?unread=true`, `?group=auction|finance|shipping`) |
 | 11.2 | GET | `/api/notifications/unread-count` | login | จำนวนที่ยังไม่อ่าน |
 | 11.3 | POST | `/api/notifications/:id/read` | login | อ่านแล้ว |
 | 11.4 | POST | `/api/notifications/read-all` | login | อ่านทั้งหมด |
@@ -518,7 +519,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | 11.8 | GET | `/api/admin/settings` | super_admin | ดูตั้งค่าระบบ |
 | 11.9 | PUT | `/api/admin/settings` | super_admin | แก้ตั้งค่าระบบ |
 
-**11.1** → `{ items: [{ id, event, title, message, linkUrl, isRead, createdAt }], page, limit, total, unreadCount }`
+**11.1** → `{ items: [{ id, event, group, title, message, linkUrl, isRead, createdAt }], page, limit, total, unreadCount }`
 
 **Event ทั้งหมด** (ตรงกับ `services/notify.js`, กลุ่มใช้กับ notification_settings)
 
@@ -532,11 +533,11 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | `SHIPPED` | shipping | ผู้ซื้อ | เว็บ + อีเมล |
 | `DISPUTE_OPENED` | shipping | ผู้ขาย, แอดมิน | เว็บ + อีเมล |
 
-**11.5** → `{ users: { total, newToday, pendingVerification }, listings: { active, pendingReview }, orders: { pendingPayment, paymentReview, awaitingShipment, shipped }, money: { escrowHeld, feesCollected, gmvToday }, disputes: { open } }`
+**11.5** → `{ users: { total, newToday, pendingVerification, restricted }, listings: { active, pendingReview, endingWithinHour }, orders: { pendingPayment, paymentReview, awaitingShipment, shipped, completedToday }, money: { escrowHeld, feesCollected, gmvToday }, disputes: { open }, generatedAt }` ("วันนี้" นับตามเวลาไทย, `gmvToday` = ยอด `total_amount` ของ Order ที่แอดมินอนุมัติการชำระวันนี้)
 
 **11.6** → `{ labels: ["2026-11-01", ...], completedAuctions: [3, 5, ...], gmv: [12000.00, ...] }`
 
-**11.7** → `{ items: [{ id, admin: { id, displayName }, action, targetType, targetId, detail, ipAddress, createdAt }], page, limit, total }` (Admin เห็นเฉพาะของตัวเอง)
+**11.7** query `adminId` (Super Admin เท่านั้น), `action`, `targetType`, `from`, `to` (`YYYY-MM-DD` ตามเวลาไทย) → `{ items: [{ id, admin: { id, displayName }, action, targetType, targetId, detail, ipAddress, createdAt }], page, limit, total, filters: { actions, admins } }` (Admin เห็นเฉพาะของตัวเอง)
 
 **11.8 / 11.9** `{ "settings": { "platform_fee_percent": "5", "platform_fee_min": "20", ... } }` → ค่าใหม่ทั้งหมด + `audit.log(SETTING_UPDATE)` · Errors: `INVALID_SETTING` (400)
 

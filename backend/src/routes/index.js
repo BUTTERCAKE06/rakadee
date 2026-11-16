@@ -16,8 +16,7 @@ router.get('/health', asyncHandler(async (req, res) => {
   ok(res, { status: 'ok', database, serverTime: new Date().toISOString() });
 }));
 
-
-// router.use('/auth', require('./auth.routes'));          // SA
+router.use('/auth', require('./auth.routes'));              // SA (PM ใส่ /me และ /logout ไว้ก่อน)
 // router.use('/wallet', require('./wallet.routes'));      // SA
 // router.use('/payments', require('./payment.routes'));   // SA
 // ── QA: เปิดสิทธิ์ผู้ขาย + ลงสินค้า ──────────────────────────────
@@ -28,7 +27,8 @@ router.use('/admin', require('./admin.listing.routes'));    // QA: 4.10–4.13 (
 router.get('/sellers/:userId', require('../controllers/seller.controller').getPublicProfile); // 3.4 public + Promgrammer (ดึง api นี้ไปใช้ทำ FE หน้าโปรไฟล์ผู้ขายแบบสาธารณะ)
 // router.use('/orders', require('./order.routes'));       // PM (จัดส่ง)
 // router.use('/disputes', require('./dispute.routes'));   // QA
-// router.use('/notifications', require('./notification.routes')); // PM
-// router.use('/admin', require('./admin.routes'));        // แต่ละคนเพิ่ม route แอดมินของโมดูลตัวเอง
+router.use('/notifications', require('./notification.routes')); // PM: 11.1–11.4
+router.use('/users', require('./user.routes'));                 // PM: 2.1–2.11
+router.use('/admin', require('./admin.routes'));                // PM: 11.5, 11.7 (แต่ละคนเพิ่ม route แอดมินของโมดูลตัวเองแยกไฟล์)
 
 module.exports = router;

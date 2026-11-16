@@ -18,6 +18,14 @@ const config = {
     idCardHashKey: process.env.ID_CARD_HASH_KEY || '',
     sessionTtlHours: Number(process.env.SESSION_TTL_HOURS) || 168,
   },
+  appUrl: process.env.APP_URL || `http://localhost:${Number(process.env.PORT) || 3000}`,
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: Number(process.env.SMTP_PORT) || 587,
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || 'Rakadee <no-reply@rakadee.local>',
+  },
   upload: {
     dir: path.join(__dirname, '..', '..', 'storage'),
     maxFileSizeMb: Number(process.env.UPLOAD_MAX_MB) || 5,

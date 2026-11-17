@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>การตั้งค่าบัญชี - Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    /* สไตล์หน้าการตั้งค่า */
+    .settings-container { max-width: 800px; margin: 32px auto; }
+
+    /* แท็บเมนูการตั้งค่า */
+    .settings-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1.5px solid #e2e8f0;
+      margin-bottom: 24px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .tab-btn {
+      padding: 10px 18px;
+      border: none;
+      background: none;
+      font-size: 15px;
+      font-weight: 500;
+      color: #64748b;
+      cursor: pointer;
+      border-bottom: 2.5px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.15s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .tab-btn:hover {
+      color: #1d4ed8;
+    }
+    .tab-btn.active {
+      color: #1d4ed8;
+      border-bottom-color: #1d4ed8;
+      font-weight: 600;
+    }
+
+    /* กล่องการ์ด */
+    .card-figma {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      margin-bottom: 24px;
+    }
+
+    .form-group label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .required-star {
+      color: #dc2626;
+      font-weight: 700;
+      margin-left: 3px;
+    }
+
+    .input-figma {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 15px;
+      color: #0f172a;
+      outline: none;
+      transition: all 0.15s ease;
+      background: #ffffff;
+      box-sizing: border-box;
+    }
+    .input-figma:focus {
+      border-color: #1d4ed8;
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+    }
+
+    .helper-text {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+      display: block;
+    }
+
+    .btn-figma-primary {
+      padding: 10px 20px;
+      background: #1d4ed8;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+    .btn-figma-primary:hover:not(:disabled) {
+      background: #1e40af;
+    }
+    .btn-figma-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-figma-secondary {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1.5px solid #e2e8f0;
+      background: #ffffff;
+      color: #0f172a;
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-figma-secondary:hover:not(:disabled) {
+      border-color: #1d4ed8;
+      color: #1d4ed8;
+      background: #eff6ff;
+    }
+
+    .btn-figma-danger {
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: #dc2626;
+      border: none;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-figma-danger:hover {
+      background: #b91c1c;
+    }
+
+    /* Badg */
+    .badge-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge-dot::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .badge-dot.green { background: #dcfce7; color: #15803d; }
+    .badge-dot.green::before { background: #16a34a; }
+    .badge-dot.amber { background: #fef3c7; color: #b45309; }
+    .badge-dot.amber::before { background: #d97706; }
+
+    .session-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .session-item:last-child {
+      border-bottom: none;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container">
+    <div class="settings-container">
+      <div style="margin-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 26px; color: #0f172a;">การตั้งค่าบัญชี</h1>
+        <p class="muted" style="margin: 6px 0 0; font-size: 14px;">จัดการข้อมูลส่วนตัว ความปลอดภัย และการตั้งค่าของบัญชีของคุณ</p>
+      </div>
+
+      <div id="alert-box" class="alert hidden"></div>
+
+      <!-- แท็บนำทาง -->
+      <div class="settings-tabs">
+        <button class="tab-btn active" data-tab="security">ความปลอดภัยบัญชี</button>
+        <button class="tab-btn" data-tab="profile">ข้อมูลโปรไฟล์</button>
+        <button class="tab-btn" data-tab="addresses">ที่อยู่จัดส่ง</button>
+        <button class="tab-btn" data-tab="notifications">การแจ้งเตือน</button>
+      </div>
+
+      <!-- TAB 1: ความปลอดภัยบัญชี-->
+      <div id="tab-security" class="tab-content">
+        <!-- การ์ด 1: สถานะการยืนยันอีเมล -->
+        <div class="card-figma">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3 style="margin: 0; font-size: 18px; color: #0f172a;">อีเมลและการยืนยันตัวตน</h3>
+              <p class="muted" style="margin: 4px 0 0; font-size: 13.5px;" id="user-email-display">กำลังโหลด...</p>
+            </div>
+            <div id="email-status-badge"></div>
+          </div>
+          <div id="email-resend-area" class="hidden" style="margin-top: 16px; border-top: 1px solid #f1f5f9; padding-top: 14px;">
+            <p class="muted" style="font-size: 13px; margin: 0 0 10px;">อีเมลของคุณยังไม่ได้รับการยืนยัน คุณสามารถขอรับลิงก์ยืนยันใหม่ได้:</p>
+            <button class="btn-figma-secondary" id="btn-resend-email-verify">ส่งลิงก์ยืนยันอีเมลอีกครั้ง</button>
+          </div>
+        </div>
+
+        <!-- การ์ด 2: เปลี่ยนรหัสผ่าน -->
+        <div class="card-figma">
+          <h3 style="margin: 0 0 16px; font-size: 18px; color: #0f172a;">เปลี่ยนรหัสผ่าน</h3>
+          <form id="change-pwd-form">
+            <div class="form-group">
+              <label for="current-pwd">รหัสผ่านปัจจุบัน <span class="required-star">*</span></label>
+              <input type="password" id="current-pwd" class="input-figma" required placeholder="กรอกรหัสผ่านปัจจุบัน">
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label for="new-pwd">รหัสผ่านใหม่ <span class="required-star">*</span></label>
+              <input type="password" id="new-pwd" class="input-figma" required placeholder="อย่างน้อย 8 ตัวอักษร (A-Z, a-z, 0-9)">
+              <span class="helper-text">ต้องมีความยาวอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ พิมพ์เล็ก และตัวเลข</span>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label for="confirm-pwd">ยืนยันรหัสผ่านใหม่ <span class="required-star">*</span></label>
+              <input type="password" id="confirm-pwd" class="input-figma" required placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง">
+            </div>
+
+            <div style="margin-top: 20px;">
+              <button type="submit" class="btn-figma-primary" id="btn-change-pwd">บันทึกรหัสผ่านใหม่</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- การ์ด 3: อุปกรณ์และเซสชันที่เข้าสู่ระบบ -->
+        <div class="card-figma">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div>
+              <h3 style="margin: 0; font-size: 18px; color: #0f172a;">อุปกรณ์และเซสชันที่เข้าสู่ระบบ</h3>
+              <p class="muted" style="margin: 4px 0 0; font-size: 13.5px;">รายการอุปกรณ์ที่กำลังล็อกอินใช้งานบัญชีนี้อยู่ในปัจจุบัน</p>
+            </div>
+            <button class="btn-figma-secondary" id="btn-refresh-sessions">รีเฟรช</button>
+          </div>
+
+          <div id="sessions-list" style="margin-top: 12px;">
+            <div class="muted">กำลังโหลดรายการเซสชัน...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: โปรไฟล์ (ส่วนของ PM ) -->
+      <div id="tab-profile" class="tab-content hidden">
+        <div class="card-figma" style="text-align: center; padding: 48px 24px;">
+          <h3 style="margin: 0 0 8px; color: #0f172a;">ข้อมูลโปรไฟล์ (Profile)</h3>
+          <p class="muted" style="margin: 0 0 16px;">ส่วนแก้ไขชื่อที่แสดง คำแนะนำตัวและรูปประจำตัว </p>
+        </div>
+      </div>
+
+      <!-- TAB 3: ที่อยู่จัดส่ง (ส่วนของ PM ) -->
+      <div id="tab-addresses" class="tab-content hidden">
+        <div class="card-figma" style="text-align: center; padding: 48px 24px;">
+          <h3 style="margin: 0 0 8px; color: #0f172a;">ที่อยู่จัดส่งพัสดุ</h3>
+          <p class="muted" style="margin: 0 0 16px;">ส่วนจัดการที่อยู่สำหรับรับสินค้าประมูล</p>
+        </div>
+      </div>
+
+      <!-- TAB 4: การแจ้งเตือน (ส่วนของ PM ) -->
+      <div id="tab-notifications" class="tab-content hidden">
+        <div class="card-figma" style="text-align: center; padding: 48px 24px;">
+          <h3 style="margin: 0 0 8px; color: #0f172a;">การตั้งค่าแจ้งเตือน</h3>
+          <p class="muted" style="margin: 0 0 16px;">ส่วนตั้งค่ารับอีเมลแจ้งเตือน</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    const alertBox = document.getElementById('alert-box');
+    const pwdForm = document.getElementById('change-pwd-form');
+    const btnChangePwd = document.getElementById('btn-change-pwd');
+    const sessionsList = document.getElementById('sessions-list');
+    const btnRefresh = document.getElementById('btn-refresh-sessions');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    function showAlert(msg, isError = true) {
+      alertBox.textContent = msg;
+      alertBox.className = isError ? 'alert alert-error' : 'alert alert-success';
+      alertBox.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function hideAlert() {
+      alertBox.classList.add('hidden');
+      alertBox.textContent = '';
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // สลับแท็บ
+    tabBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach((b) => b.classList.remove('active'));
+        tabContents.forEach((c) => c.classList.add('hidden'));
+
+        btn.classList.add('active');
+        const tabTarget = document.getElementById(`tab-${btn.dataset.tab}`);
+        if (tabTarget) tabTarget.classList.remove('hidden');
+      });
+    });
+
+    // ตรวจสอบ Login
+    document.addEventListener('user:ready', (e) => {
+      if (!e.detail) {
+        location.href = '/pages/login.html';
+      } else {
+        loadUserInfo();
+        loadSessions();
+      }
+    });
+
+    // โหลดข้อมูลอีเมลและสถานะ
+    async function loadUserInfo() {
+      try {
+        const user = await api.get('/auth/me');
+        if (!user) return;
+        document.getElementById('user-email-display').textContent = user.email || '-';
+        const badgeEl = document.getElementById('email-status-badge');
+        const resendArea = document.getElementById('email-resend-area');
+        if (user.emailVerified) {
+          badgeEl.innerHTML = '<span class="badge-dot green">ยืนยันอีเมลแล้ว</span>';
+          resendArea.classList.add('hidden');
+        } else {
+          badgeEl.innerHTML = '<span class="badge-dot amber">ยังไม่ยืนยันอีเมล</span>';
+          resendArea.classList.remove('hidden');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    const btnResendEmail = document.getElementById('btn-resend-email-verify');
+    if (btnResendEmail) {
+      btnResendEmail.addEventListener('click', async () => {
+        btnResendEmail.disabled = true;
+        btnResendEmail.textContent = 'กำลังส่ง...';
+        try {
+          await api.post('/auth/email/resend');
+          showAlert('ส่งลิงก์ยืนยันอีเมลใหม่เรียบร้อยแล้ว กรุณาตรวจสอบในกล่องข้อความ', false);
+        } catch (err) {
+          showAlert(err.message || 'ส่งลิงก์ยืนยันอีเมลไม่สำเร็จ');
+        } finally {
+          btnResendEmail.disabled = false;
+          btnResendEmail.textContent = 'ส่งลิงก์ยืนยันอีเมลอีกครั้ง';
+        }
+      });
+    }
+
+    // เปลี่ยนรหัสผ่าน 
+    pwdForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const currentPassword = document.getElementById('current-pwd').value;
+      const newPassword = document.getElementById('new-pwd').value;
+      const confirmPassword = document.getElementById('confirm-pwd').value;
+
+      if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+        showAlert('รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษร และมีพิมพ์ใหญ่ พิมพ์เล็ก ตัวเลข');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        showAlert('รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน');
+        return;
+      }
+
+      btnChangePwd.disabled = true;
+      btnChangePwd.textContent = 'กำลังบันทึก...';
+
+      try {
+        await api.post('/auth/password/change', { currentPassword, newPassword });
+        showAlert('เปลี่ยนรหัสผ่านสำเร็จเรียบร้อยแล้ว', false);
+        pwdForm.reset();
+      } catch (err) {
+        showAlert(err.message || 'เปลี่ยนรหัสผ่านไม่สำเร็จ');
+      } finally {
+        btnChangePwd.disabled = false;
+        btnChangePwd.textContent = 'บันทึกรหัสผ่านใหม่';
+      }
+    });
+
+    // ดึงรายการเซสชัน 
+    async function loadSessions() {
+      sessionsList.innerHTML = '<div class="muted">กำลังโหลด...</div>';
+      try {
+        const res = await api.get('/auth/sessions');
+        const items = Array.isArray(res) ? res : (res && res.items ? res.items : []);
+        if (items.length === 0) {
+          sessionsList.innerHTML = '<div class="muted">ไม่พบเซสชันอื่น</div>';
+          return;
+        }
+
+        sessionsList.innerHTML = '';
+        items.forEach((s) => {
+          const item = document.createElement('div');
+          item.className = 'session-item';
+
+          const createdDate = s.createdAt ? new Date(s.createdAt).toLocaleString('th-TH') : '-';
+          const ip = s.ipAddress || 'ไม่ทราบ IP';
+          const ua = s.userAgent || 'ไม่ทราบเบราว์เซอร์';
+          const isCurrentSession = s.isCurrent || s.current;
+
+          item.innerHTML = `
+            <div>
+              <div style="font-weight: 600; color: #0f172a; font-size: 14.5px;">
+                ${escapeHtml(ua)}
+                ${isCurrentSession ? '<span class="badge-dot green" style="margin-left: 8px;">เซสชันปัจจุบัน</span>' : ''}
+              </div>
+              <div class="muted" style="font-size: 13px; margin-top: 2px;">
+                IP: ${escapeHtml(ip)} &bull; เริ่มต้นเมื่อ: ${escapeHtml(createdDate)}
+              </div>
+            </div>
+            <div>
+              ${!isCurrentSession ? `<button class="btn-figma-danger revoke-btn" data-id="${s.id}">ออกจากระบบ</button>` : ''}
+            </div>
+          `;
+          sessionsList.appendChild(item);
+        });
+
+        //ปุ่มเตะเซสชัน
+        document.querySelectorAll('.revoke-btn').forEach((b) => {
+          b.addEventListener('click', async (ev) => {
+            const sid = ev.target.dataset.id;
+            if (!confirm('คุณต้องการบังคับออกจากระบบบนอุปกรณ์นี้หรือไม่?')) return;
+            try {
+              await api.del(`/auth/sessions/${sid}`);
+              showAlert('บังคับออกจากระบบสำเร็จ', false);
+              loadSessions();
+            } catch (err) {
+              showAlert(err.message || 'เกิดข้อผิดพลาดในการยกเลิกเซสชัน');
+            }
+          });
+        });
+
+      } catch (err) {
+        sessionsList.innerHTML = `<div class="field-error">${escapeHtml(err.message || 'โหลดเซสชันไม่สำเร็จ')}</div>`;
+      }
+    }
+
+    btnRefresh.addEventListener('click', loadSessions);
+  </script>
+</body>
+</html>

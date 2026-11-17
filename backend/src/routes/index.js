@@ -16,8 +16,8 @@ router.get('/health', asyncHandler(async (req, res) => {
   ok(res, { status: 'ok', database, serverTime: new Date().toISOString() });
 }));
 
-// router.use('/auth', require('./auth.routes'));          // SA
-// router.use('/wallet', require('./wallet.routes'));      // SA
+router.use('/auth', require('./auth.routes'));          // SA
+router.use('/wallet', require('./wallet.routes'));      // SA
 // router.use('/payments', require('./payment.routes'));   // SA
 // router.use('/listings', require('./listing.routes'));   // QA (ลงสินค้า) + Programmer (บิด/ค้นหา)
 // router.use('/orders', require('./order.routes'));       // PM (จัดส่ง)

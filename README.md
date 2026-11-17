@@ -24,6 +24,19 @@ npm run dev
 
 ถ้า Database ขึ้นว่า unavailable ให้เช็กว่า MySQL เปิดอยู่ และค่า `DB_*` ใน `.env` ถูกต้อง
 
+### ทดสอบหน้าที่ต้อง login (ระหว่างที่หน้า login ของ SA ยังไม่พร้อม)
+
+```bash
+npm run dev:token -- buyer1      # หรือ seller1, admin, superadmin
+```
+
+นำ token ที่ได้ไปใช้:
+
+- **หน้าเว็บ:** เปิด DevTools > Console แล้วพิมพ์ `localStorage.setItem('rakadee_token', '<token>')` แล้วรีเฟรช
+- **Postman / curl:** ใส่ header `Authorization: Bearer <token>`
+
+อีเมลแจ้งเตือนจะแสดงใน console ของ server จนกว่าจะตั้ง `SMTP_*` ใน `.env`
+
 ## ใช้ AI เขียนโค้ด
 
 ทุกคนในทีมใช้ AI ช่วยเขียนโค้ด กติกาทั้งหมดอยู่ใน [`AGENTS.md`](AGENTS.md) (Claude Code อ่านผ่าน `CLAUDE.md` ส่วน Cursor/Copilot/Codex อ่าน `AGENTS.md` เอง)

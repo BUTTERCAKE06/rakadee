@@ -11,6 +11,12 @@ const pool = mysql.createPool({
   timezone: 'Z',
 });
 
+// ให้ทุก connection ใช้เวลา UTC ทั้ง NOW() และ DEFAULT CURRENT_TIMESTAMP
+// (เครื่องในไทยตั้ง MySQL เป็น +07 ถ้าไม่ตั้งตรงนี้ created_at จะเพี้ยน 7 ชั่วโมงเมื่ออ่านเป็น UTC)
+pool.pool.on('connection', (conn) => {
+  conn.query("SET time_zone = '+00:00'");
+});
+
 // ใช้แบบนี้:
 // await withTransaction(async (conn) => {
 //   const [rows] = await conn.query('SELECT ... FOR UPDATE', [id]);
@@ -40,4 +46,9 @@ async function ping() {
   }
 }
 
-module.exports = { pool, withTransaction, ping };
+// query() — shorthand สำหรับ pool.query() ใช้ใน service ที่ไม่ต้องการ transaction
+async function query(sql, params) {
+  return pool.query(sql, params);
+}
+
+module.exports = { pool, query, withTransaction, ping };

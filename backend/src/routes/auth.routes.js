@@ -1,4 +1,4 @@
-// Auth Routes ใน docs/api-spec/api-spec.md
+// Auth Routes ใน docs/api-spec/api-spec.md (เจ้าของ: SA)
 const express = require('express');
 const { asyncHandler } = require('../utils/response');
 const { requireAuth } = require('../middlewares/auth');
@@ -49,4 +49,3 @@ router.get('/sessions', requireAuth, asyncHandler(authController.getSessions));
 router.delete('/sessions/:id', requireAuth, asyncHandler(authController.revokeSession));
 
 module.exports = router;
-

@@ -1,6 +1,7 @@
 // Auth Controller — ข้อ 1 ใน docs/api-spec/api-spec.md
 const { ok, created } = require('../utils/response');
 const authService = require('../services/auth.service');
+const userService = require('../services/user.service');
 
 // 1.1 GET /api/auth/terms
 async function getTerms(req, res) {
@@ -47,7 +48,7 @@ async function logout(req, res) {
 
 // 1.7 GET /api/auth/me
 async function getMe(req, res) {
-  const data = await authService.getMe(req.user.id);
+  const data = await userService.getMe(req.user.id);
   ok(res, data);
 }
 

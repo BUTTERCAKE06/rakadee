@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>รายการประมูล - RAKADEE</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/auction.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container au-page">
+    <nav class="au-breadcrumb" aria-label="เส้นทาง"><a href="/">หน้าแรก</a> › รายการประมูล</nav>
+    <form id="search-form" novalidate>
+      <div class="au-searchbar">
+        <input type="search" name="q" placeholder="ค้นหาจากชื่อและรายละเอียดสินค้า" aria-label="ค้นหาสินค้า">
+        <button class="btn btn-primary" type="submit">ค้นหา</button>
+      </div>
+      <div class="au-layout">
+        <aside class="card au-filter" aria-label="ตัวกรอง">
+          <h2>ตัวกรอง</h2>
+          <fieldset id="categories"><legend>หมวดหมู่</legend><div id="cat-list"></div></fieldset>
+          <fieldset><legend>สภาพสินค้า</legend><div id="cond-list"></div></fieldset>
+          <fieldset>
+            <legend>ช่วงราคา (บาท)</legend>
+            <div class="au-price-range">
+              <div class="form-group"><label for="minPrice">ต่ำสุด</label><input id="minPrice" name="minPrice" inputmode="decimal" placeholder="0" autocomplete="off"></div>
+              <div class="form-group"><label for="maxPrice">สูงสุด</label><input id="maxPrice" name="maxPrice" inputmode="decimal" placeholder="50000" autocomplete="off"></div>
+            </div>
+            <div id="price-error" class="field-error" role="alert"></div>
+          </fieldset>
+          <fieldset>
+            <legend>สถานะ</legend>
+            <label class="au-check"><input type="radio" name="status" value="active" checked> กำลังประมูล</label>
+            <label class="au-check"><input type="radio" name="status" value="ended"> จบการประมูลแล้ว</label>
+            <label class="au-check"><input type="checkbox" name="endingWithinHours" value="1"> ใกล้จบ (&lt; 1 ชม.)</label>
+          </fieldset>
+          <button type="button" class="btn" id="reset-filters">ล้างตัวกรอง</button>
+        </aside>
+        <section aria-label="ผลการค้นหา">
+          <div class="au-toolbar">
+            <strong id="result-count" aria-live="polite"></strong>
+            <select id="sort" name="sort" aria-label="เรียงลำดับ"></select>
+          </div>
+          <div id="results" class="au-grid"></div>
+          <nav id="pager" class="au-pager" aria-label="แบ่งหน้า"></nav>
+        </section>
+      </div>
+    </form>
+  </main>
+
+  <footer class="au-footer">
+    <div class="container">
+      <div>RAKADEE — แพลตฟอร์มประมูลสินค้าออนไลน์ มีระบบพักเงินกลาง (Escrow) ปลอดภัยทั้งผู้ซื้อและผู้ขาย</div>
+      <div><a href="/pages/terms.html">เงื่อนไขการให้บริการ</a> · <a href="/pages/terms.html#privacy">นโยบายความเป็นส่วนตัว (PDPA)</a> · <a href="/pages/help.html">ช่วยเหลือ</a> · © 2026 RAKADEE</div>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/auction-common.js"></script>
+  <script src="/js/search.js"></script>
+</body>
+</html>

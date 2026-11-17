@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>รายละเอียดสินค้า - RAKADEE</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/auction.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container au-page">
+    <nav class="au-breadcrumb" aria-label="เส้นทาง"><a href="/">หน้าแรก</a> › <span id="crumb-category"></span> › <span id="crumb-title"></span></nav>
+    <div id="listing-root"><p class="muted">กำลังโหลด...</p></div>
+  </main>
+
+  <footer class="au-footer">
+    <div class="container">
+      <div>RAKADEE — แพลตฟอร์มประมูลสินค้าออนไลน์ มีระบบพักเงินกลาง (Escrow) ปลอดภัยทั้งผู้ซื้อและผู้ขาย</div>
+      <div><a href="/pages/terms.html">เงื่อนไขการให้บริการ</a> · <a href="/pages/terms.html#privacy">นโยบายความเป็นส่วนตัว (PDPA)</a> · <a href="/pages/help.html">ช่วยเหลือ</a> · © 2026 RAKADEE</div>
+    </div>
+  </footer>
+
+  <dialog id="buynow-dialog" class="au-dialog" aria-labelledby="buynow-title">
+    <h2 id="buynow-title">ยืนยันซื้อทันที</h2>
+    <p id="buynow-text"></p>
+    <div class="au-dialog-actions">
+      <button type="button" class="btn" id="buynow-cancel">ยกเลิก</button>
+      <button type="button" class="btn btn-primary" id="buynow-confirm">ยืนยันซื้อทันที</button>
+    </div>
+  </dialog>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/auction-common.js"></script>
+  <script src="/js/listing.js"></script>
+</body>
+</html>

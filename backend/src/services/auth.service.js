@@ -176,7 +176,7 @@ async function register(data, ipAddress = '127.0.0.1', userAgent = '') {
   if (Number(ex.id_card_taken) > 0) throw new AppError(409, 'ID_CARD_TAKEN', 'เลขประจำตัวประชาชนนี้ถูกลงทะเบียนแล้ว');
 
   // 4. บันทึกลงฐานข้อมูลใน Transaction
-  return withTransaction(async (conn) => {
+  const created = await withTransaction(async (conn) => {
     const passwordHash = hashPassword(password);
     const idCardEncrypted = encryptIdCard(idCardNumber);
     const idCardLast4 = idCardNumber.slice(-4);
@@ -222,20 +222,26 @@ async function register(data, ipAddress = '127.0.0.1', userAgent = '') {
 
     console.log(`[AUTH:EMAIL_VERIFY] userId=${userId} email=${email} token=${emailVerifyToken}`);
 
-    // ส่ง notification สำหรับยืนยันอีเมล
-    notify(userId, EVENTS.ACCOUNT_VERIFY, {
-      code: otpCode,
-      emailVerifyToken,
-    }).catch(() => {});
-
     return {
       userId,
       email,
       username,
       idCardLast4,
       otpExpiresAt: otpExpiresAt.toISOString(),
+      emailVerifyToken,
     };
   });
+
+  // ส่งลิงก์ยืนยันอีเมลหลัง COMMIT แล้วเท่านั้น
+  const { emailVerifyToken, ...result } = created;
+  sendEmailVerifyLink(result.userId, emailVerifyToken);
+  return result;
+}
+
+// อีเมลยืนยัน (1.2, 1.9): ลิงก์ไปหน้า verify-email.html?token=...
+function sendEmailVerifyLink(userId, token) {
+  const link = `${config.appUrl}/pages/verify-email.html?token=${token}`;
+  notify(userId, EVENTS.ACCOUNT_VERIFY, { link }).catch(() => {});
 }
 
 /**
@@ -246,7 +252,7 @@ async function verifyOtp(userId, code, ipAddress = '127.0.0.1', userAgent = '') 
     throw new AppError(400, 'VALIDATION_ERROR', 'กรุณาระบุรหัสผู้ใช้และรหัส OTP');
   }
 
-  return withTransaction(async (conn) => {
+  const out = await withTransaction(async (conn) => {
     // 1. ตรวจสอบสถานะ User
     const [users] = await conn.query(
       'SELECT id, role, status, phone_verified_at, activated_at FROM users WHERE id = ? FOR UPDATE',
@@ -288,7 +294,8 @@ async function verifyOtp(userId, code, ipAddress = '127.0.0.1', userAgent = '') 
       const newAttempts = otp.attempts + 1;
       await conn.query('UPDATE otp_codes SET attempts = ? WHERE id = ?', [newAttempts, otp.id]);
       const attemptsLeft = Math.max(0, 5 - newAttempts);
-      throw new AppError(400, 'OTP_INVALID', 'รหัส OTP ไม่ถูกต้อง', { attemptsLeft });
+      // ห้าม throw ใน transaction ไม่งั้นตัวนับ attempts ถูก rollback (กรอกผิดได้ไม่จำกัด) ให้ COMMIT ก่อนแล้วค่อย throw
+      return { otpError: new AppError(400, 'OTP_INVALID', 'รหัส OTP ไม่ถูกต้อง', { attemptsLeft }) };
     }
 
     // 4. ยืนยัน OTP สำเร็จ
@@ -355,6 +362,8 @@ async function verifyOtp(userId, code, ipAddress = '127.0.0.1', userAgent = '') 
       walletBalance: 10000.00,
     };
   });
+  if (out.otpError) throw out.otpError;
+  return out;
 }
 
 /**
@@ -573,6 +582,7 @@ async function resendEmailVerify(userId) {
   );
 
   console.log(`[AUTH:RESEND_EMAIL_VERIFY] userId=${userId} email=${users[0].email} token=${token}`);
+  sendEmailVerifyLink(userId, token);
 
   return { sent: true };
 }
@@ -641,7 +651,7 @@ async function resetPassword(token, newPassword) {
     // ยกเลิกเซสชันทั้งหมดของผู้ใช้เพื่อความปลอดภัย
     await conn.query('UPDATE sessions SET revoked_at = UTC_TIMESTAMP() WHERE user_id = ? AND revoked_at IS NULL', [t.user_id]);
 
-    return { passwordReset: true };
+    return { reset: true }; // api-spec 1.11
   });
 }
 
@@ -662,7 +672,10 @@ async function changePassword(userId, currentSessionId, oldPassword, newPassword
     if (users.length === 0) throw new AppError(404, 'NOT_FOUND', 'ไม่พบบัญชีผู้ใช้');
 
     if (!verifyPassword(oldPassword, users[0].password_hash)) {
-      throw new AppError(400, 'INVALID_OLD_PASSWORD', 'รหัสผ่านเดิมไม่ถูกต้อง');
+      throw new AppError(400, 'WRONG_PASSWORD', 'รหัสผ่านเดิมไม่ถูกต้อง');
+    }
+    if (oldPassword === newPassword) {
+      throw new AppError(400, 'SAME_PASSWORD', 'รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม');
     }
 
     const newPasswordHash = hashPassword(newPassword);
@@ -674,7 +687,7 @@ async function changePassword(userId, currentSessionId, oldPassword, newPassword
       [userId, currentSessionId]
     );
 
-    return { passwordChanged: true };
+    return { changed: true }; // api-spec 1.12
   });
 }
 

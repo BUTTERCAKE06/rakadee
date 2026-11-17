@@ -81,9 +81,9 @@ async function resetPassword(req, res) {
 
 // 1.12 POST /api/auth/password/change
 async function changePassword(req, res) {
-  const { oldPassword, newPassword } = req.body;
+  const { currentPassword, newPassword } = req.body; // ชื่อช่องตาม api-spec 1.12
   const currentSessionId = req.session ? req.session.id : null;
-  const data = await authService.changePassword(req.user.id, currentSessionId, oldPassword, newPassword);
+  const data = await authService.changePassword(req.user.id, currentSessionId, currentPassword, newPassword);
   ok(res, data);
 }
 

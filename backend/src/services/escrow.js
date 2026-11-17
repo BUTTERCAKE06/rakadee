@@ -44,11 +44,15 @@ async function hold(orderId, existingConn = null) {
     const order = orders[0];
     const totalAmount = Number(order.total_amount);
 
-    // 2. บันทึกแถวลง escrows (1 order = 1 escrow)
+    // 2. 1 order = 1 escrow: ถ้ามีอยู่แล้วห้ามรีเซ็ตกลับเป็น held (กันปล่อยเงิน/คืนเงินซ้ำ)
+    const [existing] = await conn.query('SELECT status FROM escrows WHERE order_id = ? FOR UPDATE', [orderId]);
+    if (existing.length > 0) {
+      if (existing[0].status === 'held') return { orderId: Number(orderId), amount: totalAmount, status: 'held' };
+      throw new AppError(409, 'INVALID_STATE', `คำสั่งซื้อนี้ปิดเงินพักไปแล้ว (สถานะ ${existing[0].status})`);
+    }
     await conn.query(
       `INSERT INTO escrows (order_id, amount, status, held_at)
-       VALUES (?, ?, 'held', UTC_TIMESTAMP())
-       ON DUPLICATE KEY UPDATE amount = VALUES(amount), status = 'held'`,
+       VALUES (?, ?, 'held', UTC_TIMESTAMP())`,
       [orderId, totalAmount]
     );
 

@@ -213,7 +213,7 @@ async function register(data, ipAddress = '127.0.0.1', userAgent = '') {
     // 4.4 Token ยืนยันอีเมล
     const emailVerifyToken = generateRandomToken(32);
     const emailTokenHash = hashSha256(emailVerifyToken);
-    const emailTokenExpires = new Date(Date.now() + 24 * 3600 * 1000);
+    const emailTokenExpires = new Date(Date.now() + time.emailVerifyExpireMs);
 
     await conn.query(
       'INSERT INTO user_tokens (user_id, purpose, token_hash, expires_at) VALUES (?, \'email_verify\', ?, ?)',
@@ -574,7 +574,7 @@ async function resendEmailVerify(userId) {
 
   const token = generateRandomToken(32);
   const tokenHash = hashSha256(token);
-  const expiresAt = new Date(Date.now() + 24 * 3600 * 1000);
+  const expiresAt = new Date(Date.now() + time.emailVerifyExpireMs);
 
   await pool.query(
     'INSERT INTO user_tokens (user_id, purpose, token_hash, expires_at) VALUES (?, \'email_verify\', ?, ?)',
@@ -606,6 +606,7 @@ async function forgotPassword(email) {
     );
 
     console.log(`[AUTH:PASSWORD_RESET] userId=${userId} email=${email} token=${token} expiresAt=${expiresAt.toISOString()}`);
+    notify(userId, EVENTS.PASSWORD_RESET, { link: `${config.appUrl}/pages/reset-password.html?token=${token}` }).catch(() => {});
   }
 
   // คืนค่า sent: true เสมอเพื่อความปลอดภัย (ไม่เปิดเผยว่าอีเมลมีในระบบหรือไม่)

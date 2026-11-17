@@ -526,9 +526,12 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | event | กลุ่ม | ผู้รับ | ช่องทาง |
 | --- | --- | --- | --- |
 | `ACCOUNT_VERIFY` | - | ผู้สมัคร | อีเมลเท่านั้น (ไม่ปิดได้) |
+| `PASSWORD_RESET` | - | ผู้ขอรีเซ็ตรหัสผ่าน | อีเมลเท่านั้น (ไม่ปิดได้) |
 | `LISTING_APPROVED`, `LISTING_REJECTED` | auction | ผู้ขาย | เว็บ + อีเมล |
 | `OUTBID`, `AUCTION_EXTENDED`, `AUCTION_ENDING_SOON` | auction | ผู้บิด / Watchlist | เว็บ + อีเมล |
 | `AUCTION_WON`, `AUCTION_LOST` | auction | ผู้ชนะ / ผู้แพ้ / ผู้ขาย | เว็บ + อีเมล |
+
+ข้อมูลที่ส่งให้ `notify()`: ราคาใช้ `amount` (รับ `currentPrice`, `price`, `finalPrice` ด้วย) · แจ้งผู้ขายตอนปิดประมูลใช้ `AUCTION_WON` (ขายได้) หรือ `AUCTION_LOST` (ไม่มีผู้ชนะ) พร้อม `forSeller: true` และ `result` (`no_bid` / `below_reserve`) · ระยะ "ใกล้หมดเวลา" อ่านจาก `time.endingSoonMs`
 | `PAYMENT_DUE_SOON`, `PAYMENT_SUCCESS`, `FUNDS_RELEASED`, `REFUNDED` | finance | ผู้ซื้อ / ผู้ขาย | เว็บ + อีเมล |
 | `SHIPPED` | shipping | ผู้ซื้อ | เว็บ + อีเมล |
 | `DISPUTE_OPENED` | shipping | ผู้ขาย, แอดมิน | เว็บ + อีเมล |

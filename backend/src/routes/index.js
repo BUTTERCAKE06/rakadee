@@ -1,23 +1,21 @@
-// รวม router ทุกโมดูลไว้ที่นี่ ทุก route อยู่ใต้ /api
-// เพิ่มโมดูลใหม่: สร้างไฟล์ src/routes/<module>.routes.js แล้ว router.use() ด้านล่าง
 const express = require('express');
+const { pool } = require('../config/db');
 const { ok, asyncHandler } = require('../utils/response');
-const db = require('../config/db');
 
 const router = express.Router();
 
 router.get('/health', asyncHandler(async (req, res) => {
   let database = 'ok';
   try {
-    await db.ping();
-  } catch {
-    database = 'unavailable';
+    await pool.query('SELECT 1');
+  } catch (err) {
+    database = 'error: ' + err.message;
   }
   ok(res, { status: 'ok', database, serverTime: new Date().toISOString() });
 }));
 
-router.use('/auth', require('./auth.routes'));              // SA (PM ใส่ /me และ /logout ไว้ก่อน)
-// router.use('/wallet', require('./wallet.routes'));      // SA
+router.use('/auth', require('./auth.routes'));              // SA
+router.use('/wallet', require('./wallet.routes'));          // SA
 // router.use('/payments', require('./payment.routes'));   // SA
 // ── QA: เปิดสิทธิ์ผู้ขาย + ลงสินค้า ──────────────────────────────
 router.get('/categories', require('../controllers/listing.controller').getCategories);  // 4.1 public

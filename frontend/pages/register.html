@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>สมัครสมาชิก - Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    /* สไตล์เฉพาะหน้าสมัครสมาชิก */
+    .auth-container { max-width: 540px; margin: 40px auto; }
+    
+    .card-figma {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    
+    .logo-badge {
+      width: 40px;
+      height: 40px;
+      background: #103ba1;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 22px;
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .required-star {
+      color: #dc2626;
+      font-weight: 700;
+      margin-left: 3px;
+    }
+
+    .input-figma {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 15px;
+      color: #0f172a;
+      outline: none;
+      transition: all 0.15s ease;
+      background: #ffffff;
+      box-sizing: border-box;
+    }
+    .input-figma:focus {
+      border-color: #1d4ed8;
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+    }
+
+    .helper-text {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+      display: block;
+    }
+
+    .btn-figma-primary {
+      width: 100%;
+      height: 46px;
+      background: #1d4ed8;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-figma-primary:hover:not(:disabled) {
+      background: #1e40af;
+    }
+    .btn-figma-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-figma-secondary {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1.5px solid #e2e8f0;
+      background: #ffffff;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-figma-secondary:hover:not(:disabled) {
+      border-color: #1d4ed8;
+      color: #1d4ed8;
+      background: #eff6ff;
+    }
+    .btn-figma-secondary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .terms-box {
+      max-height: 190px;
+      overflow-y: auto;
+      background: #f8fafc;
+      padding: 16px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #334155;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .otp-input {
+      letter-spacing: 12px;
+      font-size: 28px;
+      text-align: center;
+      font-weight: 700;
+      color: #1d4ed8;
+      font-family: monospace;
+    }
+
+    .badge-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .badge-dot::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #16a34a;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container">
+    <div class="auth-container">
+      <div class="card-figma">
+        <div id="alert-box" class="alert hidden"></div>
+
+        <!-- STEP 1: Registration Form -->
+        <div id="step-register">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div class="logo-badge">R</div>
+            <h2 style="margin: 0; font-size: 24px; color: #0f172a;">สมัครสมาชิก Rakadee</h2>
+            <p class="muted" style="margin: 6px 0 0; font-size: 14px;">สร้างบัญชีเพื่อเริ่มต้นประมูลและลงขายสินค้า</p>
+          </div>
+
+          <!-- ข้อกำหนดและ PDPA (ข้อ 2.1 ต้องยอมรับก่อน) -->
+          <div style="margin-bottom: 16px;">
+            <label style="font-weight: 600; font-size: 13.5px; color: #0f172a; margin-bottom: 6px; display: block;">
+              ข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว
+            </label>
+            <div class="terms-box" id="terms-content">กำลังโหลดข้อกำหนดและนโยบายความเป็นส่วนตัว...</div>
+            <label style="display:flex; align-items:flex-start; gap:10px; font-weight:normal; cursor:pointer; font-size: 13.5px; color: #1e293b; background: #f1f5f9; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1;">
+              <input type="checkbox" id="accept-terms" required style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
+              <span>ฉันได้อ่านและยอมรับ <strong>ข้อกำหนดการใช้งาน</strong> และ <strong>นโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA)</strong> <span style="color: #dc2626; font-weight: 600;">*</span></span>
+            </label>
+          </div>
+
+          <form id="register-form" style="margin-top: 20px;">
+            <div class="form-group">
+              <label for="reg-email">อีเมล <span class="required-star">*</span></label>
+              <input type="email" id="reg-email" class="input-figma" required placeholder="example@email.com">
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label for="reg-username">ชื่อผู้ใช้ (Username) <span class="required-star">*</span></label>
+              <input type="text" id="reg-username" class="input-figma" required placeholder="4-30 ตัวอักษร (a-z, 0-9, _)">
+              <span class="helper-text"></span>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label for="reg-password">รหัสผ่าน <span class="required-star">*</span></label>
+              <input type="password" id="reg-password" class="input-figma" required placeholder="อย่างน้อย 8 ตัวอักษร">
+              <span class="helper-text">ต้องมีตัวพิมพ์ใหญ่ (A-Z), พิมพ์เล็ก (a-z) และตัวเลข (0-9)</span>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label for="reg-fullname">ชื่อ - นามสกุลจริง <span class="required-star">*</span></label>
+              <input type="text" id="reg-fullname" class="input-figma" required placeholder="เช่น สมชาย ใจดี">
+              <span class="helper-text"></span>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label for="reg-phone">เบอร์โทรศัพท์มือถือ <span class="required-star">*</span></label>
+              <input type="tel" id="reg-phone" class="input-figma" required placeholder="08XXXXXXXX (10 หลัก)" maxlength="10">
+              <span class="helper-text"></span>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label for="reg-idcard">เลขประจำตัวประชาชน 13 หลัก <span class="required-star">*</span></label>
+              <input type="text" id="reg-idcard" class="input-figma" required placeholder="เลข 13 หลัก ไม่ต้องใส่ขีด" maxlength="13">
+              <span class="helper-text"></span>
+            </div>
+
+            <div style="margin-top: 24px;">
+              <button type="submit" class="btn-figma-primary" id="btn-submit-reg" disabled>
+                สมัครสมาชิกและรับรหัส OTP
+              </button>
+            </div>
+          </form>
+
+          <div style="margin-top: 24px; text-align: center; font-size: 14px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+            มีบัญชีอยู่แล้ว? <a href="/pages/login.html" style="color: #1d4ed8; font-weight: 500;">เข้าสู่ระบบ</a>
+          </div>
+        </div>
+
+        <!-- STEP 2: OTP Verification -->
+        <div id="step-otp" class="hidden">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div class="logo-badge">R</div>
+            <h2 style="margin: 0; font-size: 24px; color: #0f172a;">ยืนยันรหัส OTP</h2>
+            <p class="muted" style="margin: 6px 0 0; font-size: 14px;">
+              ระบบได้ส่งรหัส OTP 6 หลักไปยังเบอร์ <strong id="otp-phone-display" style="color: #0f172a;"></strong>
+            </p>
+            <div style="margin-top: 8px;">
+              <span class="badge-dot">รับเงินทดลอง 10,000 บาททันทีที่ยืนยัน</span>
+            </div>
+          </div>
+
+          <form id="otp-form" style="margin-top: 20px;">
+            <div class="form-group">
+              <label for="otp-code" style="text-align: center;">กรอกรหัส OTP (6 หลัก)</label>
+              <input type="text" id="otp-code" class="input-figma otp-input" maxlength="6" required placeholder="------">
+            </div>
+
+            <div style="margin-top: 20px;">
+              <button type="submit" class="btn-figma-primary" id="btn-verify-otp">
+                ยืนยันรหัส OTP และเปิดใช้งานบัญชี
+              </button>
+            </div>
+          </form>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; font-size: 14px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+            <span id="otp-timer" class="muted">หมดอายุใน: <strong id="otp-countdown" style="color: #dc2626;">05:00</strong></span>
+            <button type="button" class="btn-figma-secondary" id="btn-resend-otp" disabled>
+              ขอรหัสใหม่ (<span id="resend-countdown">60</span>s)
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    let registeredUserId = null;
+    let registeredPhone = '';
+    let otpExpiresAt = null;
+    let countdownInterval = null;
+    let resendCooldownInterval = null;
+
+    const alertBox = document.getElementById('alert-box');
+    const acceptTermsCheck = document.getElementById('accept-terms');
+    const btnSubmitReg = document.getElementById('btn-submit-reg');
+    const registerForm = document.getElementById('register-form');
+    const stepRegister = document.getElementById('step-register');
+    const stepOtp = document.getElementById('step-otp');
+    const otpForm = document.getElementById('otp-form');
+    const btnResendOtp = document.getElementById('btn-resend-otp');
+
+    function showAlert(msg, isError = true) {
+      alertBox.textContent = msg;
+      alertBox.className = isError ? 'alert alert-error' : 'alert alert-success';
+      alertBox.classList.remove('hidden');
+      alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideAlert() {
+      alertBox.classList.add('hidden');
+      alertBox.textContent = '';
+    }
+
+    // 1. โหลด ToS & PDPA
+    api.get('/auth/terms')
+      .then(data => {
+        const box = document.getElementById('terms-content');
+        box.innerHTML = (data.termsHtml || '') + '<hr style="margin: 8px 0; border: none; border-top: 1px solid #e2e8f0;">' + (data.privacyHtml || '');
+      })
+      .catch(() => {
+        document.getElementById('terms-content').textContent = 'ข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว (PDPA) ของ Rakadee';
+      });
+
+    // ปลดล็อกปุ่มสมัครเมื่อติ๊กยอมรับ ToS
+    acceptTermsCheck.addEventListener('change', (e) => {
+      btnSubmitReg.disabled = !e.target.checked;
+    });
+
+    // Checksum เลขประจำตัวประชาชน 
+    function validateThaiIdCard(id) {
+      if (!/^\d{13}$/.test(id)) return false;
+      let sum = 0;
+      for (let i = 0; i < 12; i++) sum += parseInt(id.charAt(i), 10) * (14 - (i + 1));
+      const check = (11 - (sum % 11)) % 10;
+      return check === parseInt(id.charAt(12), 10);
+    }
+
+    // 2. ส่งฟอร์มสมัครสมาชิก
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const email = document.getElementById('reg-email').value.trim();
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const fullName = document.getElementById('reg-fullname').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const idCardNumber = document.getElementById('reg-idcard').value.trim();
+
+      //
+      if (!acceptTermsCheck.checked) {
+        return showAlert('กรุณาติ๊กยอมรับข้อกำหนดการใช้งานและนโยบาย PDPA');
+      }
+      if (!/^[a-zA-Z0-9_]{4,30}$/.test(username)) {
+        return showAlert('ชื่อผู้ใช้ต้องมีความยาว 4-30 ตัวอักษร (a-z, 0-9, _)');
+      }
+      if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
+        return showAlert('รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร และมีทั้งตัวพิมพ์ใหญ่ พิมพ์เล็ก และตัวเลข');
+      }
+      if (!/^0\d{9}$/.test(phone)) {
+        return showAlert('เบอร์โทรศัพท์ต้องเป็นตัวเลข 10 หลักขึ้นต้นด้วย 0');
+      }
+      if (!validateThaiIdCard(idCardNumber)) {
+        return showAlert('เลขประจำตัวประชาชน 13 หลักไม่ถูกต้องตามหลักเกณฑ์');
+      }
+
+      btnSubmitReg.disabled = true;
+      btnSubmitReg.textContent = 'กำลังประมวลผล...';
+
+      try {
+        const res = await api.post('/auth/register', {
+          email,
+          username,
+          password,
+          fullName,
+          phone,
+          idCardNumber,
+          acceptTerms: true,
+          acceptPrivacy: true,
+          termsVersion: '1.0',
+          privacyVersion: '1.0'
+        });
+
+        registeredUserId = res.userId;
+        registeredPhone = phone;
+        otpExpiresAt = new Date(res.otpExpiresAt);
+
+        // OTP
+        document.getElementById('otp-phone-display').textContent = phone;
+        stepRegister.classList.add('hidden');
+        stepOtp.classList.remove('hidden');
+        startOtpCountdown();
+        startResendCooldown(60);
+        showAlert('ระบบได้ส่งรหัส OTP แล้ว กรุณาตรวจสอบและกรอกรหัสยืนยัน', false);
+      } catch (err) {
+        showAlert(err.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก');
+        btnSubmitReg.disabled = false;
+        btnSubmitReg.textContent = 'สมัครสมาชิกและรับรหัส OTP';
+      }
+    });
+
+    // 3. ยืนยันรหัส OTP
+    otpForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const code = document.getElementById('otp-code').value.trim();
+      if (!code || code.length !== 6) {
+        return showAlert('กรุณากรอกรหัส OTP ให้ครบ 6 หลัก');
+      }
+
+      const btnVerify = document.getElementById('btn-verify-otp');
+      btnVerify.disabled = true;
+      btnVerify.textContent = 'กำลังยืนยัน...';
+
+      try {
+        const res = await api.post('/auth/otp/verify', {
+          userId: registeredUserId,
+          code: code
+        });
+
+        // บันทึก Session Token เข้าสู่ระบบทันที
+        api.setToken(res.token);
+
+        showAlert('ยืนยัน OTP สำเร็จ! บัญชีของคุณเปิดใช้งานแล้ว และได้รับเครดิตเริ่มต้น 10,000 บาท', false);
+
+        setTimeout(() => {
+          location.href = '/pages/wallet.html';
+        }, 1500);
+      } catch (err) {
+        showAlert(err.message || 'รหัส OTP ไม่ถูกต้องหรือหมดอายุ');
+        btnVerify.disabled = false;
+        btnVerify.textContent = 'ยืนยันรหัส OTP และเปิดใช้งานบัญชี';
+      }
+    });
+
+    // 4. ขอ OTP ใหม่
+    btnResendOtp.addEventListener('click', async () => {
+      hideAlert();
+      btnResendOtp.disabled = true;
+
+      try {
+        const res = await api.post('/auth/otp/resend', { userId: registeredUserId });
+        otpExpiresAt = new Date(res.otpExpiresAt);
+        startOtpCountdown();
+        startResendCooldown(60);
+        showAlert('ส่งรหัส OTP ใหม่เรียบร้อยแล้ว', false);
+      } catch (err) {
+        showAlert(err.message || 'ไม่สามารถขอรหัส OTP ใหม่ได้ในขณะนี้');
+        if (err.details && err.details.retryAfterSec) {
+          startResendCooldown(err.details.retryAfterSec);
+        } else {
+          btnResendOtp.disabled = false;
+        }
+      }
+    });
+
+    function startOtpCountdown() {
+      if (countdownInterval) clearInterval(countdownInterval);
+      const timerEl = document.getElementById('otp-countdown');
+
+      countdownInterval = setInterval(() => {
+        const now = new Date();
+        const diff = Math.max(0, Math.floor((otpExpiresAt - now) / 1000));
+        const m = String(Math.floor(diff / 60)).padStart(2, '0');
+        const s = String(diff % 60).padStart(2, '0');
+        timerEl.textContent = `${m}:${s}`;
+
+        if (diff <= 0) {
+          clearInterval(countdownInterval);
+          showAlert('รหัส OTP หมดอายุแล้ว กรุณากดปุ่มขอรหัสใหม่');
+        }
+      }, 1000);
+    }
+
+    function startResendCooldown(sec) {
+      if (resendCooldownInterval) clearInterval(resendCooldownInterval);
+      btnResendOtp.disabled = true;
+      let remaining = sec;
+      const cdEl = document.getElementById('resend-countdown');
+      cdEl.textContent = remaining;
+
+      resendCooldownInterval = setInterval(() => {
+        remaining--;
+        cdEl.textContent = remaining;
+        if (remaining <= 0) {
+          clearInterval(resendCooldownInterval);
+          btnResendOtp.disabled = false;
+          btnResendOtp.textContent = 'ขอรหัสใหม่';
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>

@@ -1,23 +1,51 @@
-// Auth (เจ้าของ: SA) — api-spec หัวข้อ 1 · mount ที่ /api/auth
-// PM ใส่ไว้ก่อนเฉพาะ 1.6 logout และ 1.7 me เพราะ navbar และทุกหน้าที่ต้อง login ใช้
-// SA เพิ่ม register / OTP / login / password / sessions ต่อในไฟล์นี้ได้เลย
+// Auth Routes ใน docs/api-spec/api-spec.md (เจ้าของ: SA)
 const express = require('express');
-const db = require('../config/db');
+const { asyncHandler } = require('../utils/response');
 const { requireAuth } = require('../middlewares/auth');
-const { ok, asyncHandler } = require('../utils/response');
-const userService = require('../services/user.service');
+const authController = require('../controllers/auth.controller');
 
 const router = express.Router();
 
-// 1.6 ออกจากระบบ (session นี้)
-router.post('/logout', requireAuth, asyncHandler(async (req, res) => {
-  await db.pool.query('UPDATE sessions SET revoked_at = UTC_TIMESTAMP() WHERE id = ?', [req.user.sessionId]);
-  ok(res, { loggedOut: true });
-}));
+// 1.1 ข้อกำหนดและนโยบายความเป็นส่วนตัว (public)
+router.get('/terms', asyncHandler(authController.getTerms));
 
-// 1.7 ข้อมูลผู้ใช้ปัจจุบัน (UserMe)
-router.get('/me', requireAuth, asyncHandler(async (req, res) => {
-  ok(res, await userService.getMe(req.user.id));
-}));
+// 1.2 สมัครสมาชิก (public)
+router.post('/register', asyncHandler(authController.register));
+
+// 1.3 ยืนยัน OTP (public)
+router.post('/otp/verify', asyncHandler(authController.verifyOtp));
+
+// 1.4 ขอ OTP ใหม่ (public)
+router.post('/otp/resend', asyncHandler(authController.resendOtp));
+
+// 1.5 เข้าสู่ระบบ (public)
+router.post('/login', asyncHandler(authController.login));
+
+// 1.6 ออกจากระบบ (login)
+router.post('/logout', requireAuth, asyncHandler(authController.logout));
+
+// 1.7 ข้อมูลผู้ใช้ปัจจุบัน (login)
+router.get('/me', requireAuth, asyncHandler(authController.getMe));
+
+// 1.8 ยืนยันอีเมลจากลิงก์ (public)
+router.post('/email/verify', asyncHandler(authController.verifyEmail));
+
+// 1.9 ส่งลิงก์ยืนยันอีเมลใหม่ (login)
+router.post('/email/resend', requireAuth, asyncHandler(authController.resendEmailVerify));
+
+// 1.10 ขอลิงก์รีเซ็ตรหัสผ่าน (public)
+router.post('/password/forgot', asyncHandler(authController.forgotPassword));
+
+// 1.11 ตั้งรหัสผ่านใหม่จากลิงก์ (public)
+router.post('/password/reset', asyncHandler(authController.resetPassword));
+
+// 1.12 เปลี่ยนรหัสผ่าน (login)
+router.post('/password/change', requireAuth, asyncHandler(authController.changePassword));
+
+// 1.13 ดูรายการอุปกรณ์ที่เคยเข้าสู่ระบบ (login)
+router.get('/sessions', requireAuth, asyncHandler(authController.getSessions));
+
+// 1.14 ออกจากระบบอุปกรณ์อื่น (login)
+router.delete('/sessions/:id', requireAuth, asyncHandler(authController.revokeSession));
 
 module.exports = router;

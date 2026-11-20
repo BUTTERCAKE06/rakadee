@@ -12,13 +12,16 @@ INSERT INTO users (id, email, username, password_hash, full_name, display_name, 
   (4, 'buyer1@rakadee.local', 'buyer1', 'scrypt$70479c76a1830b6cb808b3529c42bb7d$5a1a15883c1246962649aab3ed274a8c6504dd5371182cd5728639c69d451d7a5a2dabeee643ef162cf68ae3b34d05691ff1c448a5e97c975ff7c6fe69f06658', 'ผู้ซื้อ หนึ่ง', 'buyer1', '0822222222', 'bidder', 'active', UTC_TIMESTAMP(), UTC_TIMESTAMP(), UTC_TIMESTAMP()),
   (5, 'buyer2@rakadee.local', 'buyer2', 'scrypt$70479c76a1830b6cb808b3529c42bb7d$5a1a15883c1246962649aab3ed274a8c6504dd5371182cd5728639c69d451d7a5a2dabeee643ef162cf68ae3b34d05691ff1c448a5e97c975ff7c6fe69f06658', 'ผู้ซื้อ สอง', 'buyer2', '0833333333', 'bidder', 'active', UTC_TIMESTAMP(), UTC_TIMESTAMP(), UTC_TIMESTAMP());
 
-INSERT INTO seller_profiles (user_id, shop_name, shop_description, origin_province) VALUES
-  (3, 'ร้านทดสอบ', 'ร้านสำหรับทดสอบระบบ', 'กรุงเทพมหานคร');
+-- ร้านที่แอดมินอนุมัติแล้ว (D-18) address_id ใส่หลังสร้างที่อยู่ด้านล่าง
+INSERT INTO seller_profiles (user_id, shop_name, shop_description, origin_province, status, reviewed_by, reviewed_at) VALUES
+  (3, 'ร้านทดสอบ', 'ร้านสำหรับทดสอบระบบ', 'กรุงเทพมหานคร', 'approved', 2, UTC_TIMESTAMP());
 
 INSERT INTO addresses (user_id, recipient_name, phone, address_line, sub_district, district, province, postal_code, is_default) VALUES
   (3, 'ผู้ขาย ทดสอบ', '0811111111', '1 ถนนพหลโยธิน', 'ลาดยาว', 'จตุจักร', 'กรุงเทพมหานคร', '10900', 1),
   (4, 'ผู้ซื้อ หนึ่ง', '0822222222', '99 ถนนรัชดาภิเษก', 'ดินแดง', 'ดินแดง', 'กรุงเทพมหานคร', '10400', 1),
   (5, 'ผู้ซื้อ สอง', '0833333333', '50 ถนนนิมมานเหมินท์', 'สุเทพ', 'เมืองเชียงใหม่', 'เชียงใหม่', '50200', 1);
+
+UPDATE seller_profiles SET address_id = (SELECT id FROM addresses WHERE user_id = 3 AND is_default = 1 LIMIT 1) WHERE user_id = 3;
 
 -- Wallet + เครดิตแรกเข้า (D-05) เฉพาะสมาชิก ไม่สร้างให้แอดมิน
 INSERT INTO wallets (id, user_id, balance) VALUES (1, 3, 10000.00), (2, 4, 10000.00), (3, 5, 10000.00);

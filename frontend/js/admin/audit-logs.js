@@ -3,6 +3,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const ACTION_LABEL = {
+    SELLER_APPROVE: 'อนุมัติร้านค้า',
+    SELLER_REJECT: 'ไม่อนุมัติร้านค้า',
     LISTING_APPROVE: 'อนุมัติสินค้า',
     LISTING_REJECT: 'ไม่อนุมัติสินค้า',
     PAYMENT_APPROVE: 'อนุมัติการชำระเงิน',

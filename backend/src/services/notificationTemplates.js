@@ -27,6 +27,19 @@ const TEMPLATES = {
     message: (d) => `กดลิงก์เพื่อตั้งรหัสผ่านใหม่ (ใช้ได้ ${minutes(time.passwordResetExpireMs)} นาที ครั้งเดียว): ${d.link || ''}`,
     link: () => null,
   },
+  // D-18 ผลการตรวจคำขอเปิดร้าน (ปิดไม่ได้)
+  SELLER_APPROVED: {
+    group: null,
+    title: () => 'ร้านของคุณได้รับการอนุมัติ',
+    message: () => 'คุณเป็นผู้ขายแล้ว เริ่มลงสินค้าประมูลได้เลย',
+    link: () => '/pages/seller/listing-form.html',
+  },
+  SELLER_REJECTED: {
+    group: null,
+    title: () => 'คำขอเปิดร้านไม่ผ่านการอนุมัติ',
+    message: (d) => `${d.reason ? `เหตุผล: ${d.reason} ` : ''}แก้ไขข้อมูลแล้วยื่นใหม่ได้`,
+    link: () => '/pages/seller/open-shop.html',
+  },
   LISTING_APPROVED: {
     group: 'auction',
     title: () => 'สินค้าได้รับการอนุมัติ',

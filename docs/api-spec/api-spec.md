@@ -180,17 +180,31 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 
 ---
 
-## 3. เปิดสิทธิ์ผู้ขาย (เจ้าของ: QA) — ข้อ 2.4-5, D-07
+## 3. เปิดสิทธิ์ผู้ขาย (เจ้าของ: QA) — ข้อ 2.4-5, 8.2-5, D-18
 
 | # | Method | Path | สิทธิ์ | ทำอะไร |
 | --- | --- | --- | --- | --- |
-| 3.1 | POST | `/api/seller/profile` | member (`sell`) | เปิดร้าน → `role = seller` ทันที |
-| 3.2 | GET | `/api/seller/profile` | seller | ข้อมูลร้านของฉัน |
-| 3.3 | PUT | `/api/seller/profile` | seller | แก้ข้อมูลร้าน |
-| 3.4 | GET | `/api/sellers/:userId` | public | โปรไฟล์ร้านสาธารณะ + สินค้าที่กำลังประมูล |
+| 3.1 | POST | `/api/seller/profile` | member (`sell`) | ยื่นขอเปิดร้าน → `pending` รอแอดมินอนุมัติ (ยื่นใหม่ได้เมื่อ `rejected`) |
+| 3.2 | GET | `/api/seller/profile` | member | ใบสมัคร/ข้อมูลร้านของฉัน หรือ `null` |
+| 3.3 | PUT | `/api/seller/profile` | seller | แก้ข้อมูลร้าน (ร้านที่อนุมัติแล้ว ไม่ต้องตรวจซ้ำ) |
+| 3.4 | GET | `/api/sellers/:userId` | public | โปรไฟล์ร้านสาธารณะ + สินค้าที่กำลังประมูล (เฉพาะร้าน `approved`) |
+| 3.5 | GET | `/api/admin/seller-applications` | admin | รายการคำขอเปิดร้าน (`?status=pending` ค่าเริ่มต้น) |
+| 3.6 | GET | `/api/admin/seller-applications/:userId` | admin | รายละเอียดผู้สมัครสำหรับตรวจ |
+| 3.7 | POST | `/api/admin/seller-applications/:userId/approve` | admin | อนุมัติ → `role = seller` |
+| 3.8 | POST | `/api/admin/seller-applications/:userId/reject` | admin | ไม่อนุมัติ (บังคับเหตุผล) |
 
-- **3.1 / 3.3** `{ "shopName": "ร้านการ์ด", "shopDescription": "...", "originProvince": "เชียงใหม่" }` → `{ shopName, shopDescription, originProvince, createdAt }` · Errors: `ALREADY_SELLER` (409)
-- **3.4** → `{ userId, shopName, shopDescription, originProvince, displayName, avatarUrl, joinedAt, activeListings: [ListingCard] }`
+- **3.1** `{ "shopName": "ร้านการ์ด", "shopDescription": "...", "originProvince": "เชียงใหม่", "addressId": 3 }` (D-18)
+  - ตรวจ: อีเมลยืนยันแล้ว, `addressId` เป็นที่อยู่ของตัวเอง, ยังไม่มีคำขอ `pending` และยังไม่เป็นผู้ขาย
+  - 201 → `SellerProfile` (`status: "pending"`) · ยื่นซ้ำหลัง `rejected` ใช้ path เดิม: อัปเดตข้อมูล, `status = pending`, `submitted_at = now`, ล้าง `reject_reason`
+  - Errors: `EMAIL_NOT_VERIFIED` (403), `ADDRESS_REQUIRED` (400), `APPLICATION_PENDING` (409), `ALREADY_SELLER` (409)
+- **SellerProfile** = `{ shopName, shopDescription, originProvince, address: Address | null, status: "pending|approved|rejected", rejectReason, submittedAt, reviewedAt, createdAt }`
+- **3.2** → `SellerProfile` หรือ `null` (FE ใช้ตัดสินว่าจะแสดงฟอร์ม, "รออนุมัติ" หรือเหตุผลที่ไม่ผ่าน)
+- **3.3** `{ shopName, shopDescription, originProvince, addressId }` → `SellerProfile` · Errors: `ADDRESS_REQUIRED`
+- **3.4** → `{ userId, shopName, shopDescription, originProvince, displayName, avatarUrl, joinedAt, activeListings: [ListingCard] }` · ร้านที่ยังไม่ `approved` ตอบ `NOT_FOUND`
+- **3.5** query `status` (`pending|approved|rejected`), `q` (ชื่อร้าน / username / อีเมล), `page`, `limit` → `{ items: [{ userId, username, displayName, shopName, originProvince, status, submittedAt, emailVerified, phoneVerified, accountAgeDays, penaltyCount }], page, limit, total }` เรียงเก่าสุดก่อน
+- **3.6** → `{ user: { id, username, fullName, displayName, email, phone, idCardLast4, status, emailVerified, phoneVerified, createdAt }, profile: SellerProfile, stats: { bidCount, wonCount, completedOrders, cancelledOrders }, penalties: [{ type, action, createdAt, note }] }`
+- **3.7** ใน transaction: ตรวจ `status = pending` → `approved`, `reviewed_by`, `reviewed_at`, `users.role = seller` → `notify(SELLER_APPROVED)` → `audit.log(SELLER_APPROVE, 'user', userId)` → `{ userId, status: "approved", role: "seller" }` · Errors: `INVALID_STATE`
+- **3.8** `{ "reason": "ที่อยู่ไม่ครบ" }` → `rejected`, `reject_reason` → `notify(SELLER_REJECTED, { reason })` → `audit.log(SELLER_REJECT)` → `{ userId, status: "rejected" }` · Errors: `REASON_REQUIRED`, `INVALID_STATE`
 
 ---
 
@@ -527,6 +541,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | --- | --- | --- | --- |
 | `ACCOUNT_VERIFY` | - | ผู้สมัคร | อีเมลเท่านั้น (ไม่ปิดได้) |
 | `PASSWORD_RESET` | - | ผู้ขอรีเซ็ตรหัสผ่าน | อีเมลเท่านั้น (ไม่ปิดได้) |
+| `SELLER_APPROVED`, `SELLER_REJECTED` | - | ผู้ยื่นเปิดร้าน (D-18) | เว็บ + อีเมล (ไม่ปิดได้) |
 | `LISTING_APPROVED`, `LISTING_REJECTED` | auction | ผู้ขาย | เว็บ + อีเมล |
 | `OUTBID`, `AUCTION_EXTENDED`, `AUCTION_ENDING_SOON` | auction | ผู้บิด / Watchlist | เว็บ + อีเมล |
 | `AUCTION_WON`, `AUCTION_LOST` | auction | ผู้ชนะ / ผู้แพ้ / ผู้ขาย | เว็บ + อีเมล |
@@ -536,7 +551,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | `SHIPPED` | shipping | ผู้ซื้อ | เว็บ + อีเมล |
 | `DISPUTE_OPENED` | shipping | ผู้ขาย, แอดมิน | เว็บ + อีเมล |
 
-**11.5** → `{ users: { total, newToday, pendingVerification, restricted }, listings: { active, pendingReview, endingWithinHour }, orders: { pendingPayment, paymentReview, awaitingShipment, shipped, completedToday }, money: { escrowHeld, feesCollected, gmvToday }, disputes: { open }, generatedAt }` ("วันนี้" นับตามเวลาไทย, `gmvToday` = ยอด `total_amount` ของ Order ที่แอดมินอนุมัติการชำระวันนี้)
+**11.5** → `{ users: { total, newToday, pendingVerification, restricted }, sellers: { pendingReview }, listings: { active, pendingReview, endingWithinHour }, orders: { pendingPayment, paymentReview, awaitingShipment, shipped, completedToday }, money: { escrowHeld, feesCollected, gmvToday }, disputes: { open }, generatedAt }` ("วันนี้" นับตามเวลาไทย, `gmvToday` = ยอด `total_amount` ของ Order ที่แอดมินอนุมัติการชำระวันนี้)
 
 **11.6** → `{ labels: ["2026-11-01", ...], completedAuctions: [3, 5, ...], gmv: [12000.00, ...] }`
 
@@ -544,7 +559,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 
 **11.8 / 11.9** `{ "settings": { "platform_fee_percent": "5", "platform_fee_min": "20", ... } }` → ค่าใหม่ทั้งหมด + `audit.log(SETTING_UPDATE)` · Errors: `INVALID_SETTING` (400)
 
-**รายการ action ของ `audit.log()`:** `LISTING_APPROVE`, `LISTING_REJECT`, `PAYMENT_APPROVE`, `PAYMENT_REJECT`, `DISPUTE_STATUS`, `DISPUTE_RESOLVE`, `USER_STATUS`, `USER_BAN`, `BLACKLIST_REVOKE`, `FLAG_REVIEW`, `SETTING_UPDATE`
+**รายการ action ของ `audit.log()`:** `SELLER_APPROVE`, `SELLER_REJECT`, `LISTING_APPROVE`, `LISTING_REJECT`, `PAYMENT_APPROVE`, `PAYMENT_REJECT`, `DISPUTE_STATUS`, `DISPUTE_RESOLVE`, `USER_STATUS`, `USER_BAN`, `BLACKLIST_REVOKE`, `FLAG_REVIEW`, `SETTING_UPDATE`
 
 ---
 

@@ -153,11 +153,20 @@ CREATE TABLE seller_profiles (
   shop_name         VARCHAR(100) NOT NULL,
   shop_description  VARCHAR(1000) NULL,
   origin_province   VARCHAR(100) NOT NULL,
+  address_id        BIGINT UNSIGNED NULL,          -- ที่อยู่ส่งของ/รับคืน (D-18) NULL ได้ถ้าผู้ใช้ลบที่อยู่ภายหลัง
+  status            ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',  -- D-18 แอดมินอนุมัติร้าน
+  reject_reason     VARCHAR(500) NULL,             -- บังคับเมื่อ rejected
+  submitted_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- ยื่นครั้งล่าสุด
+  reviewed_by       BIGINT UNSIGNED NULL,
+  reviewed_at       DATETIME     NULL,
   created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_seller_profiles_user (user_id),
-  CONSTRAINT fk_seller_profiles_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+  KEY idx_seller_profiles_status (status, submitted_at),
+  CONSTRAINT fk_seller_profiles_user     FOREIGN KEY (user_id)     REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_seller_profiles_address  FOREIGN KEY (address_id)  REFERENCES addresses (id) ON DELETE SET NULL,
+  CONSTRAINT fk_seller_profiles_reviewer FOREIGN KEY (reviewed_by) REFERENCES users (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------

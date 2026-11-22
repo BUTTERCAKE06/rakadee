@@ -146,7 +146,7 @@ CREATE TABLE addresses (
   CONSTRAINT fk_addresses_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- เปิดสิทธิ์ผู้ขาย (QA, ข้อ 2.4-5): กรอกแล้วได้ role = seller ทันที ไม่ต้องรอแอดมิน (D-07)
+-- เปิดสิทธิ์ผู้ขาย (QA, ข้อ 2.4-5, D-18): ยื่นแล้วเป็น pending ต้องยืนยันอีเมล + มีที่อยู่ แอดมินอนุมัติแล้วจึงได้ role = seller
 CREATE TABLE seller_profiles (
   id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   user_id           BIGINT UNSIGNED NOT NULL,

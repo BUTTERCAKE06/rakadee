@@ -199,7 +199,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
         <div>
           <h3 style="margin: 0; font-size: 18px; color: var(--color-text);">ประวัติรายได้จากการขาย (Seller Earnings)</h3>
-          <p class="muted" style="margin: 4px 0 0; font-size: 13.5px;">สรุปรายได้แยกตามคำสั่งซื้อ ค่าธรรมเนียมแพลตฟอร์ม (5% ขั้นต่ำ 20 บาท) และสถานะเงินในระบบ Escrow</p>
+          <p class="muted" style="margin: 4px 0 0; font-size: 13.5px;">สรุปรายได้แยกตามคำสั่งซื้อ ค่าธรรมเนียมแพลตฟอร์ม (<span data-fee-text>5% ขั้นต่ำ 20 บาท</span>) และสถานะเงินในระบบ Escrow</p>
         </div>
       </div>
       <div style="overflow-x: auto;">
@@ -210,7 +210,7 @@
               <th>สินค้า</th>
               <th>ราคาสินค้า</th>
               <th>ค่าส่ง</th>
-              <th>ค่าธรรมเนียม (5%)</th>
+              <th>ค่าธรรมเนียม (<span data-fee-percent>5</span>%)</th>
               <th>รายได้สุทธิ</th>
               <th>สถานะเงินใน Escrow</th>
             </tr>
@@ -260,6 +260,34 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/layout.js"></script>
+  <script>
+    // ค่าธรรมเนียมปัจจุบันจาก 11.10 (Super Admin แก้ได้) แทนข้อความตายตัว
+    api.get('/fee-config').then((f) => {
+      document.querySelectorAll('[data-fee-text]').forEach((n) => { n.textContent = `${f.percent}% ขั้นต่ำ ${f.min} บาท`; });
+      document.querySelectorAll('[data-fee-percent]').forEach((n) => { n.textContent = String(f.percent); });
+    }).catch(() => {});
+
+    // เปิดจากเมนูผู้ขาย (?view=seller): แสดง sidebar ผู้ขาย (seller-nav.js ของ QA) ให้อยู่ในส่วนผู้ขายต่อ
+    document.addEventListener('user:ready', (e) => {
+      const user = e.detail;
+      if (!user || !user.isSeller || new URLSearchParams(location.search).get('view') !== 'seller') return;
+      const main = document.querySelector('main.container');
+      const section = document.createElement('section');
+      section.append(...main.childNodes);
+      const aside = document.createElement('aside');
+      aside.className = 'account-nav';
+      aside.id = 'seller-nav';
+      main.classList.add('account-layout');
+      main.append(aside, section);
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = '/css/qa.css';
+      document.head.appendChild(css);
+      const js = document.createElement('script');
+      js.src = '/js/seller/seller-nav.js';
+      document.body.appendChild(js);
+    });
+  </script>
   <script>
     let currentPage = 1;
     let currentUser = null;

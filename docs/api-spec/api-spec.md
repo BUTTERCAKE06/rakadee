@@ -240,7 +240,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
   "durationDays": 3 }
 ```
 
-- Validation (ทั้ง FE และ BE, ข้อ 3.3): ช่องบังคับ title, categoryId (ต้องเป็นหมวดย่อย), description, itemCondition, shippingFee, originProvince, startPrice, bidIncrement, durationDays; `itemCondition` ∈ `new | used_good | defective`, `defective` ต้องมี `defectDetail`; ตัวเลขต้องไม่ติดลบ, `startPrice > 0`, `bidIncrement > 0`, `reservePrice ≥ startPrice`, `buyNowPrice > startPrice` และ `> reservePrice`; `durationDays` ∈ 1, 3, 7
+- Validation (ทั้ง FE และ BE, ข้อ 3.3): ช่องบังคับ title, categoryId (ต้องเป็นหมวดย่อย), description, itemCondition, shippingFee, originProvince, startPrice, bidIncrement, durationDays; `itemCondition` ∈ `new | used_good | defective`, สินค้ามือสอง (`used_good`, `defective`) ต้องมี `defectDetail` (ไม่มีให้พิมพ์ "ไม่มีตำหนิ"); ตัวเลขต้องไม่ติดลบ, `startPrice > 0`, `bidIncrement > 0`, `reservePrice ≥ startPrice`, `buyNowPrice > startPrice` และ `> reservePrice`; `durationDays` ∈ 1, 3, 7
 - `originProvince` ค่าเริ่มต้นจากข้อมูลร้าน
 - Response → `ListingDetail` (ดู 5.2) สำหรับเจ้าของ รวม `reservePrice`, `status`, `rejectReason`
 - Errors: `VALIDATION_ERROR` (`details` ระบุทุกช่อง เช่น `{ "reservePrice": "ราคาขั้นต่ำต้องไม่น้อยกว่าราคาเริ่มต้น" }`), `INVALID_STATE` (แก้หลังอนุมัติ)
@@ -251,7 +251,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 
 **4.8** → `{ id, status: "cancelled" }` · Errors: `INVALID_STATE` (เริ่มประมูลแล้ว)
 
-**4.9** query `status`, `page`, `limit` → รายการ `{ ...ListingCard, status, rejectReason, submittedAt }`
+**4.9** query `status`, `page`, `limit` → รายการ `{ ...ListingCard, status, rejectReason, submittedAt, durationDays }`
 
 **4.10** query `status` (ค่าเริ่มต้น `pending_review`), `q`, `page` → `{ items: [{ id, title, coverUrl, seller: { id, displayName, shopName }, categoryName, startPrice, submittedAt, status }] }`
 
@@ -306,7 +306,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 
 - `minNextBid` = `startPrice` ถ้ายังไม่มีบิด ไม่งั้น `currentPrice + bidIncrement`
 - `buyNowAvailable` = สถานะ active และมี `buyNowPrice` และ (ยังไม่มีบิด หรือ `currentPrice < buyNowPrice`) (D-15)
-- `me` เป็น `null` สำหรับ Guest; เจ้าของสินค้าได้ `reservePrice` เพิ่ม
+- `me` เป็น `null` สำหรับ Guest; เจ้าของสินค้าและแอดมินได้ `reservePrice` และ `durationDays` (1 | 3 | 7 ใช้ในหน้าแก้ไขสินค้า) เพิ่ม
 - สินค้า draft/pending/rejected/cancelled ของคนอื่นตอบ `NOT_FOUND`
 
 **5.3** → `{ items: [{ bidder: "b***1", isMe: false, amount: 1500.00, bidType: "manual", createdAt }], page, limit, total }` เรียงใหม่สุดก่อน (`bidType` ของ Proxy แสดงเป็น `"auto"`)
@@ -481,24 +481,32 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | 9.1 | POST | `/api/orders/:id/disputes` | ผู้ซื้อของ Order (`pay`) | เปิดข้อพิพาท (multipart หลักฐานหลายรูป) |
 | 9.2 | GET | `/api/disputes/:id` | ผู้ซื้อ/ผู้ขายของ Order, admin | รายละเอียด + หลักฐานสองฝั่ง |
 | 9.3 | POST | `/api/disputes/:id/evidence` | ผู้ซื้อ/ผู้ขายของ Order | ส่งหลักฐานเพิ่ม (field `files` + `note`) |
+| 9.3b | GET | `/api/disputes` | member | ข้อพิพาทของฉัน (`?role=buyer|seller&status=active|<status>`) |
 | 9.4 | GET | `/api/admin/disputes` | admin | รายการข้อพิพาท (`?status=`) |
 | 9.5 | PATCH | `/api/admin/disputes/:id/status` | admin | เปลี่ยนสถานะระหว่างตรวจ |
 | 9.6 | POST | `/api/admin/disputes/:id/resolve` | admin | ตัดสิน |
+| 9.7 | GET | `/api/disputes/:id/evidence/:evidenceId` | ผู้ซื้อ/ผู้ขายของ Order, admin | ไฟล์รูปหลักฐาน (คนอื่นได้ `NOT_FOUND`) |
 
 **9.1** multipart: `type` (`not_received | not_as_described | damaged | other`), `description` (บังคับ ≥ 10 ตัว), `contactInfo`, `files` (0–5 รูป)
 - ระบบ: Order `disputed` (escrow ยัง `held` แต่ปล่อยไม่ได้), `notify(seller, DISPUTE_OPENED)`
 - → `{ disputeId, status: "open", orderStatus: "disputed" }` · Errors: `DISPUTE_NOT_ALLOWED` (409 เงินถูกปล่อยแล้วหรือสถานะไม่ใช่), `DISPUTE_ALREADY_OPEN` (409)
 
-**9.2** → `{ id, orderId, type, description, contactInfo, status, resolution, adminNote, openedAt, resolvedAt, order: OrderDetail(ย่อ), evidence: [{ id, party: "buyer|seller", url, note, createdAt }] }`
+**9.2** → `{ id, orderId, type, description, contactInfo, status, resolution, adminNote, openedAt, resolvedAt, order: OrderDetail(ย่อ), evidence: [{ id, party: "buyer|seller", url, note, createdAt }] }` · `url` = `/api/disputes/:id/evidence/:evidenceId` (9.7) ต้องแนบ token จึงโหลดผ่าน `api.blob()` · `order.shipment.proofUrl` = 8.8
 
 **9.3** → `{ evidence: [...] }` · Errors: `INVALID_STATE` (ปิดแล้ว)
 
-**9.5** `{ "status": "awaiting_evidence" | "investigating" | "return_in_progress" | "refund_in_progress", "note": "..." }` → `{ id, status }` + แจ้งทั้งสองฝ่าย + `audit.log(DISPUTE_STATUS)`
+**9.3b** `role` ไม่ส่ง = ทั้งสองบทบาท, `status=active` = ยังไม่ปิด → `{ items: [{ id, orderId, listingTitle, coverUrl, type, status, resolution, totalAmount, myRole, counterparty, sellerEvidenceCount, openedAt, updatedAt }], page, limit, total }` (ที่ยังไม่ปิดก่อน ใหม่สุดก่อน)
+
+**9.4** query `status` (`active` = ยังไม่ปิด หรือค่าสถานะ), `q` (เลข Order / ชื่อสินค้า / username), `page`, `limit` → `{ items: [{ id, orderId, type, status, resolution, listingTitle, totalAmount, buyer: { id, displayName }, seller: { id, displayName }, openedAt, updatedAt }], page, limit, total }` (ที่ยังไม่ปิดก่อน เก่าสุดก่อน)
+
+**9.5** `{ "status": "awaiting_evidence" | "investigating" | "return_in_progress" | "refund_in_progress", "note": "..." }` → `{ id, status }` + `notify(ผู้ซื้อและผู้ขาย, DISPUTE_UPDATED)` + `audit.log(DISPUTE_STATUS)`
 
 **9.6** `{ "resolution": "refund_buyer" | "release_seller", "adminNote": "..." }` (adminNote บังคับ)
 - `refund_buyer`: dispute `closed` → `escrow.refund()` → Order `cancelled` (`dispute_refund`)
 - `release_seller`: dispute `closed` → `escrow.release()` → Order `completed`
-- `audit.log(DISPUTE_RESOLVE)` → `{ id, status: "closed", resolution, orderStatus, escrowStatus }` · Errors: `INVALID_STATE` (ปิดแล้ว), `NOTE_REQUIRED`
+- `audit.log(DISPUTE_RESOLVE)` + `notify(ผู้ซื้อและผู้ขาย, DISPUTE_RESOLVED)` → `{ id, status: "closed", resolution, orderStatus, escrowStatus }` · Errors: `INVALID_STATE` (ปิดแล้ว), `NOTE_REQUIRED`
+
+**9.7** → ไฟล์รูป (ไม่ใช่ JSON) ตรวจสิทธิ์เหมือน 9.2 แบบเดียวกับสลิป 7.7b และหลักฐานจัดส่ง 8.8 · ไฟล์ใน `storage/evidence` ไม่เสิร์ฟแบบ static
 
 **Service (QA):** `dispute.isOpen(orderId)` → `true` ถ้ามีแถวที่ `status <> 'closed'`
 
@@ -516,19 +524,23 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | 10.6 | GET | `/api/admin/suspicious-flags` | admin | รายการบิดน่าสงสัย (`?reviewed=false`) |
 | 10.7 | POST | `/api/admin/suspicious-flags/:id/review` | admin | ทำเครื่องหมายว่าตรวจแล้ว |
 
-**10.1** → `{ items: [{ id, username, displayName, email, phone, role, status, statusUntil, createdAt, penaltyCount }] }`
+**10.1** → `{ items: [{ id, username, displayName, fullName, email, phone (ปิดบางส่วน), idCardLast4, role, status, statusUntil, createdAt, penaltyCount }], page, limit, total }`
 
-**10.2** → `{ user: {...UserMe ไม่มี idCard เต็ม}, wallet: { balance }, stats: { bids, won, sold }, penalties: [...], recentBids: [...], recentOrders: [...], transactions: [...] }`
+**10.2** → `{ user: { id, email, username, fullName, displayName, phone, idCardLast4, avatarUrl, bio, role, status, statusUntil, statusReason, phoneVerified, emailVerified, isSeller, shop: { shopName, status } | null, lastLoginAt, createdAt }, wallet: { balance }, stats: { bids, won, sold }, penalties: [{ id, type, orderId, action, actionUntil, note, createdBy, createdAt }], recentBids: [{ id, listingId, listingTitle, amount, bidType, ipAddress, createdAt }], recentOrders: [{ id, listingId, listingTitle, role: "buyer|seller", totalAmount, status, createdAt }], transactions: [{ id, type, amount, balanceAfter, referenceType, referenceId, note, createdAt }], blacklists: [{ id, phone, hasIdCard, reason, createdAt, revokedAt }] }` (ไม่มีเลขบัตรเต็มหรือ hash)
 
-**10.3** `{ "status": "active" | "restricted" | "suspended", "until": "2026-11-15T00:00:00Z", "reason": "..." }` (`until` บังคับเมื่อ restricted/suspended, `reason` บังคับ) → `{ id, status, statusUntil }` + `audit.log(USER_STATUS)` · Errors: `CANNOT_MODIFY_ADMIN` (403 Admin แก้แอดมินคนอื่นไม่ได้)
+**10.3** `{ "status": "active" | "restricted" | "suspended", "until": "2026-11-15T00:00:00Z", "reason": "..." }` (`until` บังคับเมื่อ restricted/suspended, `reason` บังคับ) → `{ id, status, statusUntil }` + `audit.log(USER_STATUS)` + `notify(ผู้ใช้, ACCOUNT_STATUS_CHANGED)` · Errors: `CANNOT_MODIFY_ADMIN` (403 Admin แก้แอดมินคนอื่นไม่ได้)
 
-**10.4** `{ "reason": "..." }` → `status = banned`, ยกเลิกทุก session, เพิ่ม blacklists (id_card_hash + phone), `penalties(admin_ban)`, `audit.log(USER_BAN)` → `{ id, status: "banned", blacklistId }`
+**10.4** `{ "reason": "..." }` → `status = banned`, ยกเลิกทุก session, เพิ่ม blacklists (id_card_hash + phone), `penalties(admin_ban)`, `audit.log(USER_BAN)`, `notify(ผู้ใช้, ACCOUNT_STATUS_CHANGED)` → `{ id, status: "banned", blacklistId }`
 
 **10.5** → `{ blacklistId, revokedAt }` (ไม่คืนสถานะบัญชีอัตโนมัติ ใช้ 10.3)
 
-**Service (QA):** `penalty.add(userId, type, { orderId, note })` ใน transaction: INSERT penalties → นับครั้งของ type เดียวกัน → ครั้งที่ 2 ขึ้นไป: `non_payment` → `suspended` จนถึง `now + time.suspendMs`, `no_shipment` → `restricted` จนถึง `now + time.suspendMs` → แจ้งผู้ใช้
+**10.6** query `reviewed` (`false` ค่าเริ่มต้น | `true` | `all`), `page`, `limit` → `{ items: [{ id, reason: "same_ip|repeated_seller", detail, listing: { id, title }, bidder: { id, username, displayName }, seller: { id, username, displayName }, reviewedBy: { id, displayName } | null, reviewedAt, createdAt }], page, limit, total }`
 
-**Scheduler (QA):** `restoreStatus` คืน `restricted`/`suspended` ที่ `status_until <= now` เป็น `active` · `detectShill` (หรือทำตอนบิด) บันทึก `suspicious_flags` เมื่อผู้บิดใช้ IP เดียวกับ session ของผู้ขาย หรือบิดร้านเดิม ≥ 5 รายการใน 7 วัน
+**10.7** → `{ id, reviewedAt }` + `audit.log(FLAG_REVIEW)`
+
+**Service (QA):** `penalty.add(userId, type, { orderId, note })` ใน transaction: INSERT penalties → นับครั้งของ type เดียวกัน → ครั้งที่ 2 ขึ้นไป: `non_payment` → `suspended` จนถึง `now + time.suspendMs`, `no_shipment` → `restricted` จนถึง `now + time.suspendMs` (ไม่ลดระดับสถานะเดิม) → หลัง COMMIT `notify(ผู้ใช้, PENALTY_ISSUED)` (เฉพาะ non_payment / no_shipment)
+
+**Scheduler (QA):** `restoreStatus` คืน `restricted`/`suspended` ที่ `status_until <= now` เป็น `active` · `detectShill` (หรือทำตอนบิด) บันทึก `suspicious_flags` เมื่อผู้บิดใช้ IP เดียวกับ session ของผู้ขาย หรือบิดร้านเดิม ≥ 5 รายการภายใน `time.shillWindowMs` (7 วัน)
 
 **สิทธิ์ Admin vs Super Admin (ข้อ 8.1):** Admin ห้าม: แก้/แบนผู้ใช้ที่เป็น admin หรือ super_admin, ปลดแบน, แก้ยอด Wallet (ไม่มี API นี้ในระบบ), ตั้งค่าระบบ, ดู Audit Log ของแอดมินคนอื่น (ดูได้เฉพาะของตัวเอง)
 
@@ -547,6 +559,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | 11.7 | GET | `/api/admin/audit-logs` | admin | Audit Log (`?adminId=&action=&from=&to=&sort=`) |
 | 11.8 | GET | `/api/admin/settings` | super_admin | ดูตั้งค่าระบบ |
 | 11.9 | PUT | `/api/admin/settings` | super_admin | แก้ตั้งค่าระบบ |
+| 11.10 | GET | `/api/fee-config` | public | ค่าธรรมเนียมปัจจุบัน (แสดงตัวอย่างรายได้) |
 
 **11.1** → `{ items: [{ id, event, group, title, message, linkUrl, isRead, createdAt }], page, limit, total, unreadCount }`
 
@@ -566,6 +579,10 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | `SHIPPED`, `SHIP_OVERDUE` | shipping | ผู้ซื้อ | เว็บ + อีเมล |
 | `ORDER_PAID`, `SHIP_DUE_SOON`, `ORDER_CANCELLED` | shipping | ผู้ขาย | เว็บ + อีเมล |
 | `DISPUTE_OPENED` | shipping | ผู้ขาย, แอดมิน | เว็บ + อีเมล |
+| `DISPUTE_UPDATED` | shipping | ผู้ซื้อ, ผู้ขาย (9.5) | เว็บ + อีเมล |
+| `DISPUTE_RESOLVED` | - | ผู้ซื้อ, ผู้ขาย (9.6) | เว็บ + อีเมล (ไม่ปิดได้) |
+| `PENALTY_ISSUED` | - | ผู้ถูกลงโทษ (non_payment / no_shipment) | เว็บ + อีเมล (ไม่ปิดได้) |
+| `ACCOUNT_STATUS_CHANGED` | - | ผู้ใช้ที่แอดมินเปลี่ยนสถานะ / แบน (10.3, 10.4) | เว็บ + อีเมล (ไม่ปิดได้) |
 
 **11.5** → `{ users: { total, newToday, pendingVerification, restricted }, sellers: { pendingReview }, listings: { active, pendingReview, endingWithinHour }, orders: { pendingPayment, paymentReview, awaitingShipment, shipped, completedToday }, money: { escrowHeld, feesCollected, gmvToday }, disputes: { open }, generatedAt }` ("วันนี้" นับตามเวลาไทย, `gmvToday` = ยอด `total_amount` ของ Order ที่แอดมินอนุมัติการชำระวันนี้)
 
@@ -580,6 +597,8 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 **11.8** → `{ settings: { platform_fee_percent: "5", platform_fee_min: "20", initial_wallet_credit: "10000", terms_version: "1.0", privacy_version: "1.0" }, items: [{ key, value, label, description, hint, updatedAt, updatedBy: { id, displayName } | null }] }`
 
 **11.9** `{ "settings": { "platform_fee_percent": "4.5" } }` (ส่งเฉพาะค่าที่แก้) → แบบเดียวกับ 11.8 + `changed: [key]` · `audit.log(SETTING_UPDATE, 'setting', 'system', { changes: { key: { from, to } } })` · Errors: `INVALID_SETTING` (400, `details: { key: เหตุผล }`)
+
+**11.10** → `{ percent: 5, min: 20 }` (ตัวเลข อ่านจาก `settings.feeConfig()`) ใช้แสดงผลเท่านั้น ค่าธรรมเนียมจริงคิดตอน `escrow.release()`
 - `platform_fee_percent` 0–100, `platform_fee_min` 0–100,000, `initial_wallet_credit` 0–1,000,000 (ทศนิยม ≤ 2) · `terms_version` / `privacy_version` รูปแบบ `1.0`
 - ค่าทั้งหมดอ่านผ่าน `services/settings.js` (`feeConfig()`, `initialCredit()`, `get(key)`) ห้าม hard-code · ค่าธรรมเนียมคิดตามค่าตั้ง ณ เวลา `escrow.release()` · เครดิตแรกเข้ามีผลกับบัญชีที่ยืนยัน OTP หลังบันทึก
 

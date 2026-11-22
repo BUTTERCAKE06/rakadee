@@ -9,7 +9,7 @@
     { href: '/pages/seller/listings.html', label: 'สินค้าของฉัน', ready: true, match: ['/pages/seller/listing-preview.html'] },
     { href: '/pages/seller/listing-form.html', label: 'ลงสินค้าใหม่', ready: true },
     { href: '/pages/seller/shipments.html', label: 'รอจัดส่ง', ready: true },   // PM (API 8.3)
-    { href: '/pages/wallet.html', label: 'การเงินผู้ขาย', ready: true },        // SA: ยอดรอรับ + ประวัติรายได้ (API 7.1, 7.3) อยู่ในหน้า Wallet
+    { href: '/pages/wallet.html?view=seller', label: 'การเงินผู้ขาย', ready: true, match: ['/pages/wallet.html'] }, // SA: หน้า Wallet (API 7.1, 7.3) ?view=seller แสดงเมนูผู้ขาย
     { href: '/pages/seller/disputes.html', label: 'ข้อพิพาท', ready: true, match: ['/pages/disputes.html'] },
   ];
 

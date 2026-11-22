@@ -10,7 +10,7 @@
 const db = require('../config/db');
 const time = require('../config/time');
 
-const SHILL_WINDOW_MS = time.shillWindowMs || 7 * 24 * 60 * 60 * 1000; // api-spec 10: "ภายใน 7 วัน"
+const SHILL_WINDOW_MS = time.shillWindowMs; // api-spec 10: "ภายใน 7 วัน" (config/time.js)
 const SHILL_MIN_LISTINGS = 5; // api-spec 10: "≥ 5 รายการ"
 
 module.exports = {

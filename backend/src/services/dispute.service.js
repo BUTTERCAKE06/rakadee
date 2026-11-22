@@ -8,6 +8,8 @@
 //   แอดมินตัดสิน (9.6) → closed + refund_buyer (escrow.refund + Order cancelled/dispute_refund)
 //                                 | release_seller (escrow.release → Order completed)
 const fs = require('fs');
+const path = require('path');
+const config = require('../config');
 const db = require('../config/db');
 const AppError = require('../utils/AppError');
 const { notify, EVENTS } = require('./notify');
@@ -22,7 +24,9 @@ const MAX_FILES = 5;
 
 const iso = (d) => (d ? new Date(d).toISOString() : null);
 const money = (v) => (v === null || v === undefined ? null : Number(v));
-const fileUrl = (p) => (p ? `/uploads/${p}` : null);
+// ไฟล์หลักฐานเปิดผ่าน API ที่ตรวจสิทธิ์เท่านั้น (9.7 / 8.8) ไม่เสิร์ฟ /uploads/evidence แบบ static
+const evidenceUrl = (disputeId, evidenceId) => `/api/disputes/${disputeId}/evidence/${evidenceId}`;
+const proofUrl = (orderId, p) => (p ? `/api/orders/${orderId}/shipment/proof` : null);
 
 // ลบไฟล์ที่ multer บันทึกไว้แล้วเมื่อคำขอล้มเหลว (กันไฟล์ค้างใน storage)
 function cleanupFiles(files) {
@@ -180,7 +184,7 @@ async function buildOrderSummary(orderId) {
       carrierOther: ship.carrier_other,
       trackingNumber: ship.tracking_number,
       shippedAt: iso(ship.shipped_at),
-      proofUrl: fileUrl(ship.proof_file_path),
+      proofUrl: proofUrl(o.id, ship.proof_file_path),
       note: ship.note,
     } : null,
     paymentDueAt: iso(o.payment_due_at),
@@ -196,7 +200,7 @@ async function listEvidence(disputeId) {
     'SELECT id, party, file_path, note, created_at FROM dispute_evidence WHERE dispute_id = ? ORDER BY created_at ASC, id ASC',
     [disputeId],
   );
-  return rows.map((e) => ({ id: e.id, party: e.party, url: fileUrl(e.file_path), note: e.note, createdAt: iso(e.created_at) }));
+  return rows.map((e) => ({ id: e.id, party: e.party, url: evidenceUrl(disputeId, e.id), note: e.note, createdAt: iso(e.created_at) }));
 }
 
 // ----------------------------------------------------------------
@@ -223,6 +227,20 @@ async function getDispute(disputeId, user) {
 // ----------------------------------------------------------------
 // 9.3 POST /api/disputes/:id/evidence — ผู้ซื้อ/ผู้ขายส่งหลักฐานเพิ่ม
 // ----------------------------------------------------------------
+// 9.7 GET /api/disputes/:id/evidence/:evidenceId — คืน path ไฟล์ (ผู้ซื้อ/ผู้ขายของ Order และแอดมิน, คนอื่น NOT_FOUND)
+async function getEvidenceFile(disputeId, evidenceId, user) {
+  await loadDisputeForViewer(disputeId, user);
+  const [[ev]] = await db.pool.query(
+    'SELECT file_path FROM dispute_evidence WHERE id = ? AND dispute_id = ?',
+    [evidenceId, disputeId],
+  );
+  if (!ev) throw new AppError(404, 'NOT_FOUND', 'ไม่พบไฟล์หลักฐาน');
+  const root = path.resolve(config.upload.dir);
+  const file = path.resolve(root, ev.file_path);
+  if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) throw new AppError(404, 'NOT_FOUND', 'ไม่พบไฟล์หลักฐาน');
+  return file;
+}
+
 async function addEvidence(disputeId, user, body, files = []) {
   try {
     const { party } = await loadDisputeForViewer(disputeId, user);
@@ -380,16 +398,25 @@ async function adminUpdateStatus(disputeId, admin, ip, body) {
     throw new AppError(400, 'VALIDATION_ERROR', 'สถานะไม่ถูกต้อง', { status: `ใช้ได้: ${ADMIN_STATUSES.join(', ')}` });
   }
 
-  await db.withTransaction(async (conn) => {
-    const [[d]] = await conn.query('SELECT id, status FROM disputes WHERE id = ? FOR UPDATE', [disputeId]);
+  const parties = await db.withTransaction(async (conn) => {
+    const [[d]] = await conn.query(
+      `SELECT d.id, d.status, d.order_id, o.buyer_id, o.seller_id
+         FROM disputes d JOIN orders o ON o.id = d.order_id
+        WHERE d.id = ? FOR UPDATE`,
+      [disputeId],
+    );
     if (!d) throw new AppError(404, 'NOT_FOUND', 'ไม่พบข้อพิพาท');
     if (d.status === 'closed') throw new AppError(409, 'INVALID_STATE', 'ข้อพิพาทนี้ปิดแล้ว', { status: d.status });
     await conn.query('UPDATE disputes SET status = ? WHERE id = ?', [status, disputeId]);
+    return { orderId: d.order_id, buyerId: Number(d.buyer_id), sellerId: Number(d.seller_id) };
   });
 
-  // TODO(SA/PM): api-spec 9.5 ให้ "แจ้งทั้งสองฝ่าย" แต่ยังไม่มี event ใน notify.js — รอเพิ่ม event แล้วเรียก notify ที่นี่
-  // note ยังไม่มีคอลัมน์ใน schema จึงเก็บไว้ใน audit detail
+  // note ยังไม่มีคอลัมน์ใน schema จึงเก็บไว้ใน audit detail และส่งไปในข้อความแจ้งเตือน
   await audit.log(admin.id, 'DISPUTE_STATUS', 'dispute', disputeId, ip, { status, note });
+  // 9.5 แจ้งทั้งสองฝ่าย
+  for (const uid of [parties.buyerId, parties.sellerId]) {
+    await notify(uid, EVENTS.DISPUTE_UPDATED, { orderId: parties.orderId, disputeId, status, note });
+  }
   return { id: disputeId, status };
 }
 
@@ -410,7 +437,7 @@ async function adminResolve(disputeId, admin, ip, body) {
     if (!d) throw new AppError(404, 'NOT_FOUND', 'ไม่พบข้อพิพาท');
     if (d.status === 'closed') throw new AppError(409, 'INVALID_STATE', 'ข้อพิพาทนี้ปิดแล้ว', { status: d.status });
     const orderId = d.order_id;
-    await conn.query('SELECT id FROM orders WHERE id = ? FOR UPDATE', [orderId]);
+    const [[o]] = await conn.query('SELECT id, buyer_id, seller_id FROM orders WHERE id = ? FOR UPDATE', [orderId]);
 
     // ปิดข้อพิพาทก่อน เพื่อให้ escrow.release() ผ่านเงื่อนไข "ไม่มีข้อพิพาทเปิด" (D-08)
     await conn.query(
@@ -435,16 +462,21 @@ async function adminResolve(disputeId, admin, ip, body) {
       orderStatus = 'completed';
       escrowStatus = 'released';
     }
-    return { orderId, orderStatus, escrowStatus };
+    return { orderId, orderStatus, escrowStatus, buyerId: Number(o.buyer_id), sellerId: Number(o.seller_id) };
   });
 
   await audit.log(admin.id, 'DISPUTE_RESOLVE', 'dispute', disputeId, ip, {
     resolution, adminNote, orderId: result.orderId,
   });
+  // แจ้งผลการตัดสินทั้งสองฝ่าย (แจ้งเรื่องเงินคืน / เงินเข้า มาจาก escrow อยู่แล้ว)
+  const base = { orderId: result.orderId, disputeId, resolution, reason: adminNote };
+  await notify(result.buyerId, EVENTS.DISPUTE_RESOLVED, { ...base, forSeller: false });
+  await notify(result.sellerId, EVENTS.DISPUTE_RESOLVED, { ...base, forSeller: true });
   return { id: disputeId, status: 'closed', resolution, orderStatus: result.orderStatus, escrowStatus: result.escrowStatus };
 }
 
 module.exports = {
+  getEvidenceFile,
   isOpen,
   openDispute,
   getDispute,

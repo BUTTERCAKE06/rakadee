@@ -32,6 +32,8 @@ router.use('/', require('./auction.routes'));                 // Programmer: 5.1
 router.use('/', require('./order.routes'));                   // PM: 8.1–8.8 คำสั่งซื้อและการจัดส่ง
 router.use('/', require('./dispute.routes'));               // QA: 9.1–9.3 + GET /disputes (/orders/:id/disputes, /disputes/:id)
 router.use('/notifications', require('./notification.routes')); // PM: 11.1–11.4
+// PM: 11.10 ค่าธรรมเนียมปัจจุบัน (public) ใช้แสดงตัวอย่างรายได้ในหน้าลงสินค้า / ช่วยเหลือ
+router.get('/fee-config', asyncHandler(async (req, res) => ok(res, await require('../services/settings').feeConfig())));
 router.use('/users', require('./user.routes'));                 // PM: 2.1–2.11
 router.use('/admin', require('./admin.routes'));                // PM: 11.5, 11.7 (แต่ละคนเพิ่ม route แอดมินของโมดูลตัวเองแยกไฟล์)
 

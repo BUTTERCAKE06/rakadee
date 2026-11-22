@@ -45,6 +45,7 @@
     .timer-active { background: #fef3c7; color: var(--color-warning); }
     .timer-paused { background: #eff6ff; color: var(--color-primary); }
     .timer-expired { background: #fee2e2; color: var(--color-danger); }
+    .timer-done { background: #dcfce7; color: var(--color-success); }
 
     .wallet-box {
       border: 1.5px solid var(--color-border);
@@ -89,7 +90,7 @@
       <div class="card">
         <h2 style="font-size: 16px; margin: 0 0 16px;">สรุปรายการสินค้า</h2>
         <div class="item-card">
-          <img class="item-img" id="item-cover" src="" alt="รูปสินค้า">
+          <img class="item-img" id="item-cover" alt="รูปสินค้า">
           <div class="item-info">
             <div class="item-title" id="item-title">กำลังโหลด...</div>
             <span class="badge" id="closing-type-badge">ประมูล</span>
@@ -154,7 +155,7 @@
           </div>
           <div id="pay-slip-thumb-box" class="hidden" style="margin-top: 10px;">
             <div style="font-size: 12.5px; color: var(--color-muted); margin-bottom: 4px;">ตัวอย่างสลิปที่เลือก:</div>
-            <img id="pay-slip-thumb" src="" alt="ตัวอย่างสลิป" style="max-height: 180px; border-radius: var(--radius); border: 1px solid var(--color-border); display: block;">
+            <img id="pay-slip-thumb" alt="ตัวอย่างสลิป" style="max-height: 180px; border-radius: var(--radius); border: 1px solid var(--color-border); display: block;">
           </div>
         </div>
 
@@ -190,7 +191,7 @@
             <a id="slip-open-btn" href="" target="_blank" rel="noopener noreferrer" class="btn" style="font-size: 12px; padding: 3px 8px; text-decoration: none;">🔍 เปิดดูรูปขนาดเต็ม</a>
           </div>
           <a id="slip-link" href="" target="_blank" rel="noopener noreferrer" style="display: inline-block;">
-            <img id="slip-img" src="" alt="สลิปการโอนเงิน" style="max-width: 240px; border-radius: var(--radius); border: 1px solid var(--color-border); cursor: zoom-in;" title="คลิกเพื่อดูรูปสลิปขนาดเต็ม">
+            <img id="slip-img" alt="สลิปการโอนเงิน" style="max-width: 240px; border-radius: var(--radius); border: 1px solid var(--color-border); cursor: zoom-in;" title="คลิกเพื่อดูรูปสลิปขนาดเต็ม">
           </a>
         </div>
       </div>
@@ -310,8 +311,9 @@
 
           if (lp.slipUrl) showSlip(lp.slipUrl);
         } else if (lp && lp.status === 'success') {
-          // อนุมัติแล้ว
-          renderTimer(null, true);
+          // อนุมัติแล้ว (ไม่ต้องนับเวลา)
+          clearInterval(timerInterval);
+          document.getElementById('timer-slot').innerHTML = '<span class="timer-badge timer-done">✓ ชำระเงินแล้ว</span>';
           balanceBox.innerHTML = `
             <div class="alert alert-success" style="margin: 0;">
               ✓ ชำระเงินสำเร็จแล้ว เงินเข้าสู่ระบบ Escrow และคำสั่งซื้อพร้อมสำหรับการจัดส่ง

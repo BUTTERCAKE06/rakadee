@@ -1,5 +1,6 @@
 // Scheduler job: ยกเลิกคำสั่งซื้อเมื่อหมดเวลาชำระเงิน 48 ชม. (เจ้าของ: SA) — D-04, api-spec 7
 const { pool, withTransaction } = require('../config/db');
+const penalty = require('../services/penalty');
 
 async function run() {
   // หา Order ที่เลยกำหนด payment_due_at และไม่มี payment สถานะ pending_review
@@ -16,24 +17,23 @@ async function run() {
 
   for (const o of orders) {
     try {
-      await withTransaction(async (conn) => {
-        // อัปเดตสถานะ Order เป็น cancelled
-        await conn.query(
+      const cancelled = await withTransaction(async (conn) => {
+        // อัปเดตสถานะ Order เป็น cancelled (เงื่อนไข status กันกรณีผู้ซื้อจ่ายเข้ามาระหว่างนั้น)
+        const [res] = await conn.query(
           `UPDATE orders
            SET status = 'cancelled', cancelled_at = UTC_TIMESTAMP(), cancel_reason = 'payment_timeout'
            WHERE id = ? AND status = 'pending_payment'`,
           [o.id]
         );
+        return res.affectedRows === 1;
       });
+      if (!cancelled) continue; // ยกเลิกไม่สำเร็จ (สถานะเปลี่ยนไปแล้ว) → ไม่ลงโทษ
 
-      // เรียก penalty (QA) ถ้ามี service นี้
+      // บทลงโทษ (QA) ล้มเหลวไม่ทำให้ job ล้ม แต่ log ไว้ให้เห็น
       try {
-        const penalty = require('../services/penalty');
-        if (penalty && typeof penalty.add === 'function') {
-          await penalty.add(o.buyer_id, 'non_payment', { orderId: o.id });
-        }
-      } catch {
-        // ถ้า QA ยังไม่ได้สร้าง penalty service จะไม่ทำให้ job ล้ม
+        await penalty.add(o.buyer_id, 'non_payment', { orderId: o.id });
+      } catch (err) {
+        console.error(`[paymentTimeout] penalty.add failed for order #${o.id}:`, err.message);
       }
 
       console.log(`[paymentTimeout] order #${o.id} cancelled due to payment timeout (buyer #${o.buyer_id})`);

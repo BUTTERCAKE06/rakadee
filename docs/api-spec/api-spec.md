@@ -373,7 +373,8 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | 7.4 | GET | `/api/orders/:id/payment` | ผู้ซื้อของ Order | ข้อมูลหน้าชำระเงิน |
 | 7.5 | PUT | `/api/orders/:id/shipping-address` | ผู้ซื้อของ Order | เปลี่ยนที่อยู่จัดส่ง (ก่อนชำระเท่านั้น) |
 | 7.6 | POST | `/api/orders/:id/pay` | ผู้ซื้อของ Order (`pay`) | ชำระด้วย Mock Wallet |
-| 7.7 | POST | `/api/payments/:id/slip` | ผู้ซื้อ | แนบสลิปจำลอง (ไม่บังคับ) |
+| 7.7 | POST | `/api/payments/:id/slip` | ผู้ซื้อ | เปลี่ยนสลิประหว่างรอตรวจ |
+| 7.7b | GET | `/api/payments/:id/slip` | ผู้จ่าย, admin | ไฟล์สลิป (ไม่ใช่ JSON) |
 | 7.8 | GET | `/api/admin/payments` | admin | รายการรอตรวจ (`?status=pending_review`) |
 | 7.9 | GET | `/api/admin/payments/:id` | admin | รายละเอียดการชำระ + Order |
 | 7.10 | POST | `/api/admin/payments/:id/approve` | admin | อนุมัติ → Escrow |
@@ -390,19 +391,22 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 
 **7.5** `{ "addressId": 3 }` → `{ shippingAddress }` · Errors: `INVALID_STATE` (ชำระแล้ว)
 
-**7.6 POST `/api/orders/:id/pay`** `{}` (D-01)
+**7.6 POST `/api/orders/:id/pay`** multipart: `slip` (ไฟล์ .jpg/.png **บังคับ**), `slipReference`, `slipAmount`, `slipTransferredAt` (ไม่บังคับ)
 
-- ใน transaction: lock order + wallet → Order ต้อง `pending_payment`, ยังไม่เลย `payment_due_at`, ไม่มี payment `pending_review`, มีที่อยู่จัดส่ง → `balance ≥ totalAmount` → หัก wallet + `wallet_transactions(payment)` → INSERT payments `pending_review`
-- 201 → `{ paymentId, status: "pending_review", walletBalance }`
-- Errors: `INSUFFICIENT_BALANCE` (400, `details: { shortfall }`), `PAYMENT_EXPIRED` (409), `PAYMENT_ALREADY_SUBMITTED` (409 กดซ้ำ), `ADDRESS_REQUIRED` (400), `INVALID_STATE`
+- ไม่มีไฟล์ `slip` → `SLIP_REQUIRED` ก่อนหักเงิน
+- ใน transaction: lock order + wallet → Order ต้อง `pending_payment`, ยังไม่เลย `payment_due_at`, ไม่มี payment `pending_review`, มีที่อยู่จัดส่ง → `balance ≥ totalAmount` → หัก wallet + `wallet_transactions(payment)` → INSERT payments `pending_review` พร้อมข้อมูลสลิป (ล้มเหลวไฟล์สลิปถูกลบ)
+- 201 → `{ paymentId, status: "pending_review", walletBalance, slipUrl }`
+- Errors: `SLIP_REQUIRED` (400), `VALIDATION_ERROR` (ข้อมูลสลิป), `INSUFFICIENT_BALANCE` (400, `details: { shortfall }`), `PAYMENT_EXPIRED` (409), `PAYMENT_ALREADY_SUBMITTED` (409 กดซ้ำ), `ADDRESS_REQUIRED` (400), `INVALID_STATE` (409)
 
-**7.7 POST `/api/payments/:id/slip`** multipart: `slip` (ไฟล์), `slipAmount`, `slipTransferredAt`, `slipReference` (ไม่บังคับทุกช่อง แต่ต้องมีอย่างน้อยไฟล์) → `{ paymentId, slipUrl, slipUploadedAt }` · Errors: `INVALID_STATE` (ตรวจแล้ว)
+**7.7 POST `/api/payments/:id/slip`** แทนสลิปเดิมระหว่าง `pending_review` multipart เหมือน 7.6 (ไฟล์บังคับ) → `{ paymentId, slipUrl, slipUploadedAt }` · Errors: `SLIP_REQUIRED`, `VALIDATION_ERROR`, `INVALID_STATE` (409 ตรวจแล้ว), `NOT_FOUND` (ไม่ใช่ผู้จ่าย)
+
+**7.7b GET `/api/payments/:id/slip`** ส่งไฟล์รูปตรง เฉพาะผู้จ่ายหรือแอดมิน (สลิปไม่เสิร์ฟเป็นไฟล์สาธารณะ) · `slipUrl` ในทุก response ชี้มาที่ path นี้ FE ต้องโหลดผ่าน `api.blob()` · Errors: `NOT_FOUND`
 
 **7.8** → `{ items: [{ paymentId, orderId, buyer: { id, displayName }, listingTitle, amount, hasSlip, createdAt, reviewDueAt }] }` เรียงเก่าสุดก่อน (`reviewDueAt` = createdAt + 24 ชม.)
 
 **7.9** → `{ payment: {...ทุกฟิลด์รวม slip}, order: {...}, buyer, seller }`
 
-**7.10** ใน transaction: payment `success` → order `awaiting_shipment`, `paid_at`, `ship_due_at = now + time.shippingDueMs` → `escrow.hold(orderId)` → `notify(buyer, PAYMENT_SUCCESS)` + แจ้งผู้ขายให้จัดส่ง → `audit.log(PAYMENT_APPROVE)` → `{ paymentId, status: "success", orderStatus: "awaiting_shipment", shipDueAt }`
+**7.10** ใน transaction: payment ต้อง `pending_review` และ order ต้อง `pending_payment` → payment `success` → order `awaiting_shipment`, `paid_at`, `ship_due_at = now + time.shippingDueMs` → `escrow.hold(orderId)` → หลัง COMMIT `notify(buyer, PAYMENT_SUCCESS)` + `notify(seller, ORDER_PAID)` → `audit.log(PAYMENT_APPROVE)` → `{ paymentId, status: "success", orderStatus: "awaiting_shipment", shipDueAt }`
 
 **7.11** `{ "reason": "ยอดเงินไม่ตรง" }` ใน transaction: payment `rejected` → คืนเงิน `wallet_transactions(payment_refund)` → เลื่อน `payment_due_at` เท่ากับเวลาที่ถูกหยุดไว้ (เวลาที่เหลือตอนกดชำระ) → `notify(buyer)` → `audit.log(PAYMENT_REJECT)` → `{ paymentId, status: "rejected", paymentDueAt }` · Errors: `REASON_REQUIRED`, `INVALID_STATE`
 
@@ -560,7 +564,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 ข้อมูลที่ส่งให้ `notify()`: ราคาใช้ `amount` (รับ `currentPrice`, `price`, `finalPrice` ด้วย) · แจ้งผู้ขายตอนปิดประมูลใช้ `AUCTION_WON` (ขายได้) หรือ `AUCTION_LOST` (ไม่มีผู้ชนะ) พร้อม `forSeller: true` และ `result` (`no_bid` / `below_reserve`) · ระยะ "ใกล้หมดเวลา" อ่านจาก `time.endingSoonMs`
 | `PAYMENT_DUE_SOON`, `PAYMENT_SUCCESS`, `FUNDS_RELEASED`, `REFUNDED` | finance | ผู้ซื้อ / ผู้ขาย | เว็บ + อีเมล |
 | `SHIPPED`, `SHIP_OVERDUE` | shipping | ผู้ซื้อ | เว็บ + อีเมล |
-| `SHIP_DUE_SOON`, `ORDER_CANCELLED` | shipping | ผู้ขาย | เว็บ + อีเมล |
+| `ORDER_PAID`, `SHIP_DUE_SOON`, `ORDER_CANCELLED` | shipping | ผู้ขาย | เว็บ + อีเมล |
 | `DISPUTE_OPENED` | shipping | ผู้ขาย, แอดมิน | เว็บ + อีเมล |
 
 **11.5** → `{ users: { total, newToday, pendingVerification, restricted }, sellers: { pendingReview }, listings: { active, pendingReview, endingWithinHour }, orders: { pendingPayment, paymentReview, awaitingShipment, shipped, completedToday }, money: { escrowHeld, feesCollected, gmvToday }, disputes: { open }, generatedAt }` ("วันนี้" นับตามเวลาไทย, `gmvToday` = ยอด `total_amount` ของ Order ที่แอดมินอนุมัติการชำระวันนี้)

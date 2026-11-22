@@ -26,8 +26,13 @@ async function updateShippingAddress(req, res) {
 // 7.6 POST /api/orders/:id/pay
 async function payWithWallet(req, res) {
   const orderId = Number(req.params.id);
-  const data = await paymentService.payWithWallet(orderId, req.user.id);
+  const data = await paymentService.payWithWallet(orderId, req.user.id, req.file, req.body);
   created(res, data);
+}
+
+// GET /api/payments/:id/slip — ไฟล์สลิป (ผู้จ่ายหรือแอดมิน)
+async function getSlip(req, res) {
+  res.sendFile(await paymentService.getSlipFile(Number(req.params.id), req.user));
 }
 
 // 7.7 POST /api/payments/:id/slip
@@ -72,6 +77,7 @@ module.exports = {
   updateShippingAddress,
   payWithWallet,
   uploadSlip,
+  getSlip,
   getAdminPayments,
   getAdminPaymentDetail,
   approvePayment,

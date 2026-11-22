@@ -13,7 +13,37 @@ function toSatang(value) {
 }
 const toDecimal = (satang) => `${Math.floor(satang / 100)}.${String(satang % 100).padStart(2, '0')}`;
 
-const fileUrl = (p) => (p ? `/uploads/${p}` : null);
+const fs = require('fs');
+const path = require('path');
+const config = require('../config');
+
+// สลิปเปิดผ่าน API ที่ตรวจสิทธิ์เท่านั้น (ผู้จ่ายหรือแอดมิน) ไม่เสิร์ฟเป็นไฟล์สาธารณะ
+const slipUrl = (paymentId, slipPath) => (slipPath ? `/api/payments/${paymentId}/slip` : null);
+
+function removeUploaded(file) {
+  if (file && file.path) fs.promises.unlink(file.path).catch(() => {});
+}
+
+// ตรวจข้อมูลประกอบสลิป (ไม่บังคับทุกช่อง ยกเว้นไฟล์)
+function readSlipFields(body = {}) {
+  const errors = {};
+  const slipReference = body.slipReference ? String(body.slipReference).trim() : null;
+  let slipAmount = null;
+  let slipTransferredAt = null;
+  if (slipReference && slipReference.length > 100) errors.slipReference = 'เลขอ้างอิงยาวเกิน 100 ตัวอักษร';
+  if (body.slipAmount !== undefined && body.slipAmount !== '') {
+    if (!/^\d{1,10}(\.\d{1,2})?$/.test(String(body.slipAmount).trim())) errors.slipAmount = 'ยอดที่โอนต้องเป็นตัวเลข ทศนิยมไม่เกิน 2 ตำแหน่ง';
+    else slipAmount = toDecimal(toSatang(String(body.slipAmount).trim()));
+  }
+  if (body.slipTransferredAt) {
+    const d = new Date(body.slipTransferredAt);
+    if (Number.isNaN(d.getTime())) errors.slipTransferredAt = 'วันเวลาที่โอนไม่ถูกต้อง';
+    else if (d.getTime() > Date.now() + 5 * 60 * 1000) errors.slipTransferredAt = 'วันเวลาที่โอนต้องไม่เป็นเวลาในอนาคต';
+    else slipTransferredAt = d;
+  }
+  if (Object.keys(errors).length) throw new AppError(400, 'VALIDATION_ERROR', 'กรุณาตรวจสอบข้อมูลสลิป', errors);
+  return { slipReference, slipAmount, slipTransferredAt };
+}
 
 /**
  * 7.4 ข้อมูลหน้าชำระเงิน (ข้อ 5.5 ใน requirement)
@@ -60,7 +90,7 @@ async function getPaymentInfo(orderId, buyerId) {
     id: Number(payments[0].id),
     status: payments[0].status,
     rejectReason: payments[0].reject_reason || null,
-    slipUrl: fileUrl(payments[0].slip_file_path),
+    slipUrl: slipUrl(payments[0].id, payments[0].slip_file_path),
   } : null;
 
   const totalAmount = Number(order.total_amount);
@@ -180,7 +210,27 @@ async function updateShippingAddress(orderId, buyerId, addressId) {
  * @param {number} orderId
  * @param {number} buyerId
  */
-async function payWithWallet(orderId, buyerId) {
+async function payWithWallet(orderId, buyerId, file, body = {}) {
+  // บังคับแนบสลิปตั้งแต่ตอนชำระ (ตรวจก่อนหักเงิน) ชำระและบันทึกสลิปใน transaction เดียวกัน
+  if (!file) {
+    throw new AppError(400, 'SLIP_REQUIRED', 'กรุณาแนบรูปสลิปการโอนเงิน', { slip: 'กรุณาเลือกไฟล์สลิป (.jpg หรือ .png)' });
+  }
+  let slip;
+  try {
+    slip = readSlipFields(body);
+  } catch (err) {
+    removeUploaded(file);
+    throw err;
+  }
+  try {
+    return await payInTransaction(orderId, buyerId, `slips/${file.filename}`, slip);
+  } catch (err) {
+    removeUploaded(file);
+    throw err;
+  }
+}
+
+async function payInTransaction(orderId, buyerId, slipPath, slip) {
   return withTransaction(async (conn) => {
     // 1. ล็อก Order
     const [orders] = await conn.query(
@@ -196,7 +246,7 @@ async function payWithWallet(orderId, buyerId) {
     }
 
     if (order.status !== 'pending_payment') {
-      throw new AppError(400, 'INVALID_STATE', 'คำสั่งซื้อไม่ได้อยู่ในสถานะรอชำระเงิน');
+      throw new AppError(409, 'INVALID_STATE', 'คำสั่งซื้อไม่ได้อยู่ในสถานะรอชำระเงิน', { status: order.status });
     }
 
     // ตรวจสอบวันหมดอายุการชำระเงิน
@@ -263,9 +313,10 @@ async function payWithWallet(orderId, buyerId) {
 
     // 5. บันทึกแถว Payment สถานะ pending_review (D-01)
     const [payResult] = await conn.query(
-      `INSERT INTO payments (order_id, payer_id, amount, method, status)
-       VALUES (?, ?, ?, 'mock_wallet', 'pending_review')`,
-      [order.id, buyerId, amountDecimal]
+      `INSERT INTO payments (order_id, payer_id, amount, method, status,
+                             slip_file_path, slip_amount, slip_transferred_at, slip_reference, slip_uploaded_at)
+       VALUES (?, ?, ?, 'mock_wallet', 'pending_review', ?, ?, ?, ?, UTC_TIMESTAMP())`,
+      [order.id, buyerId, amountDecimal, slipPath, slip.slipAmount, slip.slipTransferredAt, slip.slipReference]
     );
 
     const paymentId = Number(payResult.insertId);
@@ -274,6 +325,7 @@ async function payWithWallet(orderId, buyerId) {
       paymentId,
       status: 'pending_review',
       walletBalance: Number(newBalanceDecimal),
+      slipUrl: slipUrl(paymentId, slipPath),
     };
   });
 }
@@ -287,48 +339,59 @@ async function payWithWallet(orderId, buyerId) {
  */
 async function uploadSlip(paymentId, buyerId, file, body = {}) {
   if (!file) {
-    throw new AppError(400, 'VALIDATION_ERROR', 'กรุณาอัปโหลดไฟล์สลิป', { slip: 'กรุณาเลือกไฟล์สลิป' });
+    throw new AppError(400, 'SLIP_REQUIRED', 'กรุณาอัปโหลดไฟล์สลิป', { slip: 'กรุณาเลือกไฟล์สลิป' });
   }
-
-  return withTransaction(async (conn) => {
-    const [payments] = await conn.query(
-      'SELECT id, payer_id, status FROM payments WHERE id = ? FOR UPDATE',
-      [paymentId]
-    );
-
-    if (payments.length === 0) throw new AppError(404, 'NOT_FOUND', 'ไม่พบรายการชำระเงิน');
-    const payment = payments[0];
-
-    if (payment.payer_id !== buyerId) {
-      throw new AppError(403, 'FORBIDDEN', 'คุณไม่มีสิทธิ์แก้ไขรายการชำระเงินนี้');
-    }
-
-    if (payment.status !== 'pending_review') {
-      throw new AppError(400, 'INVALID_STATE', 'ไม่สามารถแนบสลิปได้เนื่องจากรายการได้รับการตรวจสอบแล้ว');
-    }
-
+  try {
+    const slip = readSlipFields(body);
     const relPath = `slips/${file.filename}`;
-    const slipAmount = body.slipAmount ? Number(body.slipAmount) : null;
-    const slipTransferredAt = body.slipTransferredAt ? new Date(body.slipTransferredAt) : null;
-    const slipReference = body.slipReference ? String(body.slipReference).trim() : null;
-
-    await conn.query(
-      `UPDATE payments
-       SET slip_file_path = ?,
-           slip_amount = ?,
-           slip_transferred_at = ?,
-           slip_reference = ?,
-           slip_uploaded_at = UTC_TIMESTAMP()
-       WHERE id = ?`,
-      [relPath, slipAmount, slipTransferredAt, slipReference, paymentId]
-    );
-
+    const oldPath = await withTransaction(async (conn) => {
+      const [payments] = await conn.query(
+        'SELECT id, payer_id, status, slip_file_path FROM payments WHERE id = ? FOR UPDATE',
+        [paymentId]
+      );
+      if (payments.length === 0) throw new AppError(404, 'NOT_FOUND', 'ไม่พบรายการชำระเงิน');
+      const payment = payments[0];
+      if (payment.payer_id !== buyerId) throw new AppError(404, 'NOT_FOUND', 'ไม่พบรายการชำระเงิน');
+      if (payment.status !== 'pending_review') {
+        throw new AppError(409, 'INVALID_STATE', 'ไม่สามารถแนบสลิปได้เนื่องจากรายการได้รับการตรวจสอบแล้ว', { status: payment.status });
+      }
+      await conn.query(
+        `UPDATE payments
+         SET slip_file_path = ?, slip_amount = ?, slip_transferred_at = ?, slip_reference = ?, slip_uploaded_at = UTC_TIMESTAMP()
+         WHERE id = ?`,
+        [relPath, slip.slipAmount, slip.slipTransferredAt, slip.slipReference, paymentId]
+      );
+      return payment.slip_file_path;
+    });
+    // ลบไฟล์สลิปเดิมที่ถูกแทนที่ (ไม่ให้ไฟล์ค้าง)
+    if (oldPath && oldPath !== relPath) removeUploaded({ path: path.join(config.upload.dir, oldPath) });
     return {
       paymentId: Number(paymentId),
-      slipUrl: fileUrl(relPath),
+      slipUrl: slipUrl(paymentId, relPath),
       slipUploadedAt: new Date().toISOString(),
     };
-  });
+  } catch (err) {
+    removeUploaded(file);
+    throw err;
+  }
+}
+
+/**
+ * GET /api/payments/:id/slip — ไฟล์สลิป (ผู้จ่ายหรือแอดมินเท่านั้น)
+ * @param {number} paymentId
+ * @param {object} viewer req.user
+ * @returns {Promise<string>} absolute path ของไฟล์
+ */
+async function getSlipFile(paymentId, viewer) {
+  const [[p]] = await pool.query('SELECT payer_id, slip_file_path FROM payments WHERE id = ?', [paymentId]);
+  const isAdmin = viewer.role === 'admin' || viewer.role === 'super_admin';
+  if (!p || (!isAdmin && Number(p.payer_id) !== viewer.id) || !p.slip_file_path) {
+    throw new AppError(404, 'NOT_FOUND', 'ไม่พบไฟล์สลิป');
+  }
+  const root = path.resolve(config.upload.dir);
+  const file = path.resolve(root, p.slip_file_path);
+  if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) throw new AppError(404, 'NOT_FOUND', 'ไม่พบไฟล์สลิป');
+  return file;
 }
 
 /**
@@ -435,7 +498,7 @@ async function getAdminPaymentDetail(paymentId) {
       amount: Number(r.amount),
       method: r.method,
       status: r.status,
-      slipUrl: fileUrl(r.slip_file_path),
+      slipUrl: slipUrl(r.id, r.slip_file_path),
       slipAmount: r.slip_amount ? Number(r.slip_amount) : null,
       slipTransferredAt: r.slip_transferred_at ? new Date(r.slip_transferred_at).toISOString() : null,
       slipReference: r.slip_reference,
@@ -495,7 +558,7 @@ async function approvePayment(paymentId, adminId, ipAddress = '127.0.0.1') {
     const payment = payments[0];
 
     if (payment.status !== 'pending_review') {
-      throw new AppError(400, 'INVALID_STATE', 'รายการนี้ได้รับการตรวจสอบไปแล้ว');
+      throw new AppError(409, 'INVALID_STATE', 'รายการนี้ได้รับการตรวจสอบไปแล้ว', { status: payment.status });
     }
 
     // 2. ล็อก Order
@@ -506,6 +569,9 @@ async function approvePayment(paymentId, adminId, ipAddress = '127.0.0.1') {
 
     if (orders.length === 0) throw new AppError(404, 'NOT_FOUND', 'ไม่พบคำสั่งซื้อ');
     const order = orders[0];
+    if (order.status !== 'pending_payment') {
+      throw new AppError(409, 'INVALID_STATE', 'คำสั่งซื้อนี้ไม่อยู่ในสถานะรอชำระเงินแล้ว', { status: order.status });
+    }
 
     // 3. ปรับสถานะ Payment เป็น success
     await conn.query(
@@ -548,6 +614,11 @@ async function approvePayment(paymentId, adminId, ipAddress = '127.0.0.1') {
       orderId: orderInfo.orderId,
       amount: orderInfo.amount,
     }).catch(() => {});
+    // แจ้งผู้ขายให้จัดส่ง (api-spec 7.10)
+    notify(orderInfo.sellerId, EVENTS.ORDER_PAID, {
+      orderId: orderInfo.orderId,
+      shipDueAt: shipDueAt.toISOString(),
+    }).catch(() => {});
 
     const audit = require('./audit');
     audit.log(adminId, 'PAYMENT_APPROVE', 'payment', paymentId, ipAddress, {
@@ -586,7 +657,7 @@ async function rejectPayment(paymentId, adminId, reason, ipAddress = '127.0.0.1'
     const payment = payments[0];
 
     if (payment.status !== 'pending_review') {
-      throw new AppError(400, 'INVALID_STATE', 'รายการนี้ได้รับการตรวจสอบไปแล้ว');
+      throw new AppError(409, 'INVALID_STATE', 'รายการนี้ได้รับการตรวจสอบไปแล้ว', { status: payment.status });
     }
 
     // 2. ล็อก Order
@@ -597,6 +668,7 @@ async function rejectPayment(paymentId, adminId, reason, ipAddress = '127.0.0.1'
 
     if (orders.length === 0) throw new AppError(404, 'NOT_FOUND', 'ไม่พบคำสั่งซื้อ');
     const order = orders[0];
+    // ปฏิเสธได้เสมอเพื่อคืนเงิน (แม้ Order ถูกยกเลิกไปแล้ว) แต่เลื่อนกำหนดชำระเฉพาะ Order ที่ยังรอชำระ
 
     // 3. ปรับสถานะ Payment เป็น rejected
     await conn.query(
@@ -635,10 +707,12 @@ async function rejectPayment(paymentId, adminId, reason, ipAddress = '127.0.0.1'
     const pausedMs = Math.max(0, Date.now() - new Date(payment.created_at).getTime());
     newPaymentDueAt = new Date(new Date(order.payment_due_at).getTime() + pausedMs);
 
-    await conn.query(
-      'UPDATE orders SET payment_due_at = ? WHERE id = ?',
-      [newPaymentDueAt, order.id]
-    );
+    if (order.status === 'pending_payment') {
+      await conn.query(
+        'UPDATE orders SET payment_due_at = ? WHERE id = ?',
+        [newPaymentDueAt, order.id]
+      );
+    }
 
     orderInfo = {
       orderId: order.id,
@@ -742,6 +816,7 @@ module.exports = {
   updateShippingAddress,
   payWithWallet,
   uploadSlip,
+  getSlipFile,
   getAdminPayments,
   getAdminPaymentDetail,
   approvePayment,

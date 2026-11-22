@@ -2,6 +2,7 @@
 const express = require('express');
 const { requireAuth, requireActiveAccount } = require('../middlewares/auth');
 const { asyncHandler } = require('../utils/response');
+const upload = require('../middlewares/upload');
 const paymentController = require('../controllers/payment.controller');
 
 const router = express.Router();
@@ -25,6 +26,7 @@ router.post(
   '/:id/pay',
   requireAuth,
   requireActiveAccount('pay'),
+  upload('slips').single('slip'), // บังคับแนบสลิปพร้อมชำระ
   asyncHandler(paymentController.payWithWallet)
 );
 

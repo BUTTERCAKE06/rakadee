@@ -197,10 +197,10 @@
           <div style="margin-top: 12px; padding: 12px; background: var(--color-bg); border-radius: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
               <strong>หลักฐานสลิปการโอนเงิน:</strong>
-              <a href="${p.slipUrl}" target="_blank" rel="noopener noreferrer" class="btn" style="font-size: 12px; padding: 3px 8px; text-decoration: none;">🔍 เปิดดูรูปสลิปขนาดเต็ม</a>
+              <a href="#" target="_blank" rel="noopener noreferrer" class="btn slip-link" style="font-size: 12px; padding: 3px 8px; text-decoration: none;">🔍 เปิดดูรูปสลิปขนาดเต็ม</a>
             </div>
-            <a href="${p.slipUrl}" target="_blank" rel="noopener noreferrer" style="display: block;">
-              <img src="${p.slipUrl}" class="slip-img-preview" alt="สลิปการโอนเงิน" style="cursor: zoom-in; max-height: 280px; width: auto; max-width: 100%; border-radius: 8px; border: 1px solid var(--color-border);" title="คลิกเพื่อเปิดดูรูปสลิปขนาดเต็ม">
+            <a href="#" target="_blank" rel="noopener noreferrer" class="slip-link" style="display: block;">
+              <img id="modal-slip-img" class="slip-img-preview" alt="สลิปการโอนเงิน" style="cursor: zoom-in; max-height: 280px; width: auto; max-width: 100%; border-radius: 8px; border: 1px solid var(--color-border);" title="คลิกเพื่อเปิดดูรูปสลิปขนาดเต็ม">
             </a>
             ${p.slipReference ? `<div style="margin-top: 6px; font-size: 13px; color: var(--color-muted);">เลขอ้างอิง: ${escapeHtml(p.slipReference)}</div>` : ''}
           </div>
@@ -234,6 +234,16 @@
 
           ${slipHtml}
         `;
+        // สลิปเปิดผ่าน API ที่ตรวจสิทธิ์ (ต้องแนบ token) จึงโหลดเป็น Blob
+        if (p.slipUrl) {
+          try {
+            const url = URL.createObjectURL(await api.blob(p.slipUrl.replace(/^\/api/, '')));
+            document.getElementById('modal-slip-img').src = url;
+            body.querySelectorAll('.slip-link').forEach((a) => { a.href = url; });
+          } catch (e) {
+            document.getElementById('modal-slip-img').alt = e.message;
+          }
+        }
       } catch (err) {
         body.innerHTML = `<span class="field-error">${escapeHtml(err.message)}</span>`;
       }

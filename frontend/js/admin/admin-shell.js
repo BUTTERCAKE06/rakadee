@@ -125,6 +125,13 @@ window.adminShell = {
     const dot = document.getElementById('admin-unread-dot');
     if (dot) dot.hidden = !(Number(n) > 0);
   },
+  // ใช้โดย layout.js (PM): หน้าที่ใช้ร่วมกับสมาชิก (การแจ้งเตือน / ตั้งค่า) เมื่อแอดมินเปิดจะสร้างโครงหลังบ้านให้
+  // layout.js ยิง 'user:ready' เอง จึงไม่ยิงซ้ำที่นี่
+  mount(user) {
+    renderSidebar(user);
+    renderTopbar(user);
+    if (user) api.get('/notifications/unread-count').then((d) => window.adminShell.setUnread(d.unreadCount)).catch(() => {});
+  },
 };
 
 document.addEventListener('DOMContentLoaded', async () => {

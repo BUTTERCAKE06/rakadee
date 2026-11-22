@@ -23,9 +23,14 @@
   const MAX_MB = 5;
   const EDITABLE = ['draft', 'pending_review', 'rejected'];
   // ค่าธรรมเนียม (ข้อ 5.4) ใช้แสดงตัวอย่างรายได้เท่านั้น BE คิดจริงตอนปล่อยเงินจาก settings.feeConfig()
-  // TODO: ใช้ค่าเริ่มต้นไปก่อน เพราะ API ตั้งค่าระบบ (11.8) เปิดให้ Super Admin เท่านั้น ผู้ขายอ่านไม่ได้ (รอ PM เพิ่ม API ให้ FE อ่านค่าธรรมเนียม)
-  const FEE_PERCENT = 5;
-  const FEE_MIN_BAHT = 20;
+  // ค่าจริงอ่านจาก GET /api/fee-config (11.10) ถ้าโหลดไม่ได้ใช้ค่าเริ่มต้น 5% ขั้นต่ำ 20 บาท
+  const fee = { percent: 5, min: 20, loaded: false };
+  api.get('/fee-config').then((f) => {
+    fee.percent = Number(f.percent);
+    fee.min = Number(f.min);
+    fee.loaded = true;
+    if (document.getElementById('income-box')) renderIncome();
+  }).catch(() => {});
 
   const { el } = qa;
   const $ = (id) => document.getElementById(id);
@@ -276,11 +281,13 @@
       return;
     }
     const satang = Math.round(price * 100);
-    const fee = Math.min(Math.max(Math.round(satang * FEE_PERCENT / 100), FEE_MIN_BAHT * 100), satang);
+    const feeSatang = Math.min(Math.max(Math.round(satang * fee.percent / 100), Math.round(fee.min * 100)), satang);
     const baht = (s) => qa.money(s / 100);
     box.replaceChildren(el('strong', { text: `ตัวอย่างรายได้หากปิดที่ ${baht(satang)}` }),
-      el('span', { text: `ค่าธรรมเนียม ${FEE_PERCENT}% = ${baht(fee)} (ขั้นต่ำ ฿${FEE_MIN_BAHT}) · ยอดสุทธิ ${baht(satang - fee)} (ไม่รวมค่าจัดส่ง)` }),
-      el('span', { class: 'muted', text: 'คิดจากค่าธรรมเนียมเริ่มต้น ยอดจริงคิดตามค่าที่ระบบตั้งไว้ตอนปล่อยเงิน' }));
+      el('span', { text: `ค่าธรรมเนียม ${fee.percent}% = ${baht(feeSatang)} (ขั้นต่ำ ฿${fee.min}) · ยอดสุทธิ ${baht(satang - feeSatang)} (ไม่รวมค่าจัดส่ง)` }),
+      el('span', { class: 'muted', text: fee.loaded
+        ? 'คิดจากค่าธรรมเนียมปัจจุบัน ยอดจริงคิดตามค่าที่ระบบตั้งไว้ตอนปล่อยเงิน'
+        : 'คิดจากค่าธรรมเนียมเริ่มต้น ยอดจริงคิดตามค่าที่ระบบตั้งไว้ตอนปล่อยเงิน' }));
   }
 
   /* ---------- บันทึก ---------- */

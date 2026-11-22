@@ -87,6 +87,7 @@
   // ---------------------------------------------------------------- Navbar
   let unreadBadge = null;
   function setUnread(n) {
+    if (window.adminShell) window.adminShell.setUnread(n);
     if (!unreadBadge) return;
     const count = Number(n) || 0;
     unreadBadge.textContent = count > 99 ? '99+' : String(count);
@@ -175,10 +176,50 @@
     return form;
   }
 
+  // หน้าที่ใช้ร่วมกับแอดมิน (<body data-admin-shell> เช่น การแจ้งเตือน / ตั้งค่า):
+  // ถ้าแอดมินเปิด แสดงในโครงหลังบ้าน (admin-shell.js ของ QA) แทน navbar + เมนูบัญชีสมาชิก
+  function loadAsset(tag, attrs) {
+    return new Promise((resolve, reject) => {
+      const node = document.createElement(tag);
+      Object.assign(node, attrs);
+      node.onload = resolve;
+      node.onerror = reject;
+      document.head.appendChild(node);
+    });
+  }
+
+  async function mountAdminShell(user) {
+    await Promise.all([
+      loadAsset('link', { rel: 'stylesheet', href: '/css/admin.css' }),
+      loadAsset('script', { src: '/js/admin/admin-shell.js' }),
+    ]);
+    const page = document.querySelector('main.account-layout');
+    const side = el('aside', 'admin-sidebar');
+    side.id = 'admin-sidebar';
+    const wrap = el('div', 'admin-main');
+    const top = el('div', 'admin-topbar');
+    top.id = 'admin-topbar';
+    const content = el('main', 'admin-content');
+    if (page) content.append(...page.querySelectorAll(':scope > section'));
+    wrap.append(top, content);
+    document.body.classList.add('admin-page');
+    document.getElementById('navbar')?.remove();
+    page?.remove();
+    document.body.prepend(side, wrap);
+    window.adminShell.mount(user);
+  }
+
   async function renderNavbar() {
-    const host = document.getElementById('navbar');
+    let host = document.getElementById('navbar');
     const user = await getCurrentUser();
     window.currentUser = user;
+
+    if (isAdmin(user) && document.body.hasAttribute('data-admin-shell')) {
+      try {
+        await mountAdminShell(user);
+        host = null;
+      } catch { /* โหลดโครงหลังบ้านไม่ได้ ใช้ navbar ปกติ */ }
+    }
 
     if (host) {
       const nav = el('nav', 'navbar');

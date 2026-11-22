@@ -7,6 +7,7 @@
 // แอดมินทุกคนแก้สถานะบัญชีตัวเองไม่ได้
 const db = require('../config/db');
 const AppError = require('../utils/AppError');
+const { notify, EVENTS } = require('./notify');
 const audit = require('./audit');
 const penalty = require('./penalty');
 
@@ -244,8 +245,8 @@ async function changeStatus(userId, actor, ip, body) {
     return target.status;
   });
 
-  // TODO(SA/PM): api-spec ยังไม่มี event แจ้งผู้ใช้เมื่อสถานะบัญชีเปลี่ยน
   await audit.log(actor.id, 'USER_STATUS', 'user', userId, ip, { from: prev, to: status, until: iso(until), reason });
+  await notify(userId, EVENTS.ACCOUNT_STATUS_CHANGED, { status, until: iso(until), reason: status === 'active' ? null : reason });
   return { id: userId, status, statusUntil: iso(until) };
 }
 
@@ -266,6 +267,7 @@ async function banUser(userId, actor, ip, body) {
   });
 
   await audit.log(actor.id, 'USER_BAN', 'user', userId, ip, { reason, blacklistId: result.blacklistId });
+  await notify(userId, EVENTS.ACCOUNT_STATUS_CHANGED, { status: 'banned', reason }); // session ถูกยกเลิกแล้ว จึงได้ทางอีเมลเป็นหลัก
   return { id: userId, status: 'banned', blacklistId: result.blacklistId };
 }
 

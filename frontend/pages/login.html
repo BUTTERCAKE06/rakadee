@@ -170,9 +170,14 @@
           return;
         }
 
-        showAlert('เข้าสู่ระบบสำเร็จ กำลังพาคุณไปหน้าแรก...', false);
+        // กลับหน้าเดิมจาก ?next= (เฉพาะ path ในเว็บนี้ กัน open redirect) ไม่มีก็ไป dashboard (แอดมิน) / หน้าแรก
+        const next = new URLSearchParams(location.search).get('next') || '';
+        const safeNext = /^\/(?![\/\\])/.test(next) && !next.startsWith('/pages/login.html') ? next : '';
+        const isAdmin = res.user && ['admin', 'super_admin'].includes(res.user.role);
+        const target = safeNext || (isAdmin ? '/pages/admin/dashboard.html' : '/');
+        showAlert(target === '/' ? 'เข้าสู่ระบบสำเร็จ กำลังพาคุณไปหน้าแรก...' : 'เข้าสู่ระบบสำเร็จ กำลังพาคุณไปต่อ...', false);
         setTimeout(() => {
-          location.href = '/';
+          location.href = target;
         }, 800);
       } catch (err) {
         showAlert(err.message || 'อีเมล/ชื่อผู้ใช้ หรือรหัสผ่านไม่ถูกต้อง');

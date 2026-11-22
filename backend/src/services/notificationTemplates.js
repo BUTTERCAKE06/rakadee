@@ -1,7 +1,8 @@
 // ข้อความแจ้งเตือนของแต่ละ event (api-spec หัวข้อ 11 ตาราง Event, requirement ข้อ 7 การแจ้งเตือน)
 // group ใช้กับ notification_settings: auction | finance | shipping (null = ปิดไม่ได้)
 // data ที่ใช้ได้: listingId, listingTitle, orderId, amount (หรือ currentPrice / price / finalPrice), reason, result, forSeller,
-//                endAt, extendCount, trackingNumber, carrier, proxyStopped, link
+//                endAt, extendCount, trackingNumber, carrier, proxyStopped, link,
+//                disputeId, status, resolution, note, action, penaltyType, until, count
 const time = require('../config/time');
 
 const baht = (n) => `฿${Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
@@ -15,6 +16,13 @@ const order = (d) => (d.orderId ? `#ORD-${d.orderId}` : '');
 
 const listingLink = (d) => (d.listingId ? `/pages/listing.html?id=${d.listingId}` : null);
 const orderLink = (d) => (d.orderId ? `/pages/orders.html?id=${d.orderId}` : null);
+const disputeLink = (d) => (d.disputeId ? `/pages/disputes.html?id=${d.disputeId}` : orderLink(d));
+const DISPUTE_STATUS_TH = {
+  awaiting_evidence: 'รอหลักฐาน',
+  investigating: 'กำลังตรวจสอบ',
+  return_in_progress: 'ดำเนินการคืนสินค้า',
+  refund_in_progress: 'ดำเนินการคืนเงิน',
+};
 
 const TEMPLATES = {
   ACCOUNT_VERIFY: {
@@ -154,7 +162,49 @@ const TEMPLATES = {
     group: 'shipping',
     title: () => 'มีการเปิดข้อพิพาท',
     message: (d) => `คำสั่งซื้อ ${order(d)} ถูกแจ้งปัญหา กรุณาส่งหลักฐานของคุณ`,
-    link: (d) => (d.disputeId ? `/pages/disputes.html?id=${d.disputeId}` : orderLink(d)),
+    link: disputeLink,
+  },
+  // 9.5 แอดมินเปลี่ยนสถานะระหว่างตรวจ → แจ้งผู้ซื้อและผู้ขาย (data: orderId, disputeId, status, note)
+  DISPUTE_UPDATED: {
+    group: 'shipping',
+    title: () => 'ข้อพิพาทมีความคืบหน้า',
+    message: (d) => `ข้อพิพาทของคำสั่งซื้อ ${order(d)} เปลี่ยนสถานะเป็น "${DISPUTE_STATUS_TH[d.status] || d.status}"${d.note ? ` หมายเหตุ: ${d.note}` : ''}`,
+    link: disputeLink,
+  },
+  // 9.6 ผลการตัดสิน (ปิดไม่ได้ เพราะเกี่ยวกับเงิน) data: orderId, disputeId, resolution, forSeller, reason
+  DISPUTE_RESOLVED: {
+    group: null,
+    title: () => 'แอดมินตัดสินข้อพิพาทแล้ว',
+    message: (d) => {
+      const refund = d.resolution === 'refund_buyer';
+      const result = refund
+        ? (d.forSeller ? 'คืนเงินให้ผู้ซื้อ คำสั่งซื้อถูกยกเลิก' : 'คืนเงินเต็มจำนวนให้คุณ คำสั่งซื้อถูกยกเลิก')
+        : (d.forSeller ? 'ปล่อยเงินให้คุณ (หักค่าธรรมเนียม)' : 'ปล่อยเงินให้ผู้ขาย คำสั่งซื้อเสร็จสิ้น');
+      return `ข้อพิพาทของคำสั่งซื้อ ${order(d)} ตัดสินให้${result}${d.reason ? ` เหตุผล: ${d.reason}` : ''}`;
+    },
+    link: disputeLink,
+  },
+  // บทลงโทษอัตโนมัติ (penalty.add: non_payment / no_shipment) data: action (warning|suspend|restrict), penaltyType, until, orderId
+  PENALTY_ISSUED: {
+    group: null,
+    title: (d) => ({ suspend: 'บัญชีของคุณถูกระงับชั่วคราว', restrict: 'บัญชีของคุณถูกจำกัดการลงขาย' }[d.action] || 'คุณได้รับคำเตือน'),
+    message: (d) => {
+      const why = d.penaltyType === 'non_payment' ? `ชนะประมูลแล้วไม่ชำระเงินตามกำหนด ${order(d)}` : `ไม่จัดส่งสินค้าตามกำหนด ${order(d)}`;
+      if (d.action === 'warning') return `${why} (คำเตือนครั้งแรก) หากเกิดซ้ำบัญชีจะถูกจำกัดการใช้งาน`;
+      const what = d.action === 'suspend' ? 'ประมูลและชำระเงินไม่ได้' : 'ลงสินค้าใหม่ไม่ได้';
+      return `${why} เป็นครั้งที่ ${d.count || 2} บัญชีจะ${what}จนถึง ${thaiTime(d.until)}`;
+    },
+    link: () => '/pages/settings.html',
+  },
+  // 10.3 / 10.4 แอดมินเปลี่ยนสถานะบัญชี data: status, until, reason
+  ACCOUNT_STATUS_CHANGED: {
+    group: null,
+    title: (d) => (d.status === 'active' ? 'บัญชีของคุณกลับมาใช้งานได้ตามปกติ' : 'สถานะบัญชีของคุณถูกเปลี่ยน'),
+    message: (d) => {
+      const label = { active: 'ใช้งานได้ตามปกติ', restricted: 'จำกัดการลงขาย', suspended: 'ระงับชั่วคราว', banned: 'ระงับถาวร' }[d.status] || d.status;
+      return `แอดมินเปลี่ยนสถานะบัญชีเป็น "${label}"${d.until ? ` จนถึง ${thaiTime(d.until)}` : ''}${d.reason ? ` เหตุผล: ${d.reason}` : ''}`;
+    },
+    link: () => '/pages/settings.html',
   },
 };
 

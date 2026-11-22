@@ -12,10 +12,13 @@
 //   conn       connection ของ transaction ภายนอก (เช่น paymentTimeout ที่ล็อก order อยู่) ถ้าไม่ส่งจะเปิด transaction เอง
 //   createdBy  id แอดมิน (NULL = ระบบ / Scheduler)
 //
-// หมายเหตุ: ยังไม่มี event แจ้งเตือนผู้ใช้เรื่องบทลงโทษใน notify.js (ดู docs/qa/README.md หัวข้อ "ปัญหาที่เจอ")
+// แจ้งผู้ใช้ (PENALTY_ISSUED) เฉพาะ non_payment / no_shipment หลัง COMMIT
+//   - ส่ง conn มา (transaction ภายนอก) จะไม่แจ้งเตือนเอง เพราะยังไม่ COMMIT
+//   - shill_bidding ไม่แจ้ง (บันทึกให้แอดมินตรวจ ไม่ลงโทษอัตโนมัติ ข้อ 7.3), admin_ban แจ้งจาก 10.4
 const db = require('../config/db');
 const time = require('../config/time');
 const AppError = require('../utils/AppError');
+const { notify, EVENTS } = require('./notify');
 
 const TYPES = ['non_payment', 'no_shipment', 'shill_bidding', 'admin_ban'];
 
@@ -36,7 +39,7 @@ async function add(userId, type, opts = {}) {
 
   const run = (work) => (conn ? work(conn) : db.withTransaction(work));
 
-  return run(async (c) => {
+  const result = await run(async (c) => {
     const [[user]] = await c.query(
       'SELECT id, role, status, status_until, phone, id_card_hash FROM users WHERE id = ? FOR UPDATE',
       [userId],
@@ -105,6 +108,13 @@ async function add(userId, type, opts = {}) {
 
     return result;
   });
+
+  if (!conn && (type === 'non_payment' || type === 'no_shipment')) {
+    await notify(userId, EVENTS.PENALTY_ISSUED, {
+      action: result.action, penaltyType: type, until: result.actionUntil, count: result.count, orderId,
+    });
+  }
+  return result;
 }
 
 function reasonText(type, note) {

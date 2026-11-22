@@ -115,6 +115,16 @@ const qa = (() => {
   function thumb(url, title) {
     const box = el('div', { class: 'qa-thumb', title: title || '' });
     if (!url) { box.textContent = '🖼'; return box; }
+    // ไฟล์ที่ตรวจสิทธิ์ (/api/...) ต้องแนบ token จึงโหลดผ่าน api.blob() แล้วใช้ object URL
+    if (url.startsWith('/api/')) {
+      box.textContent = '…';
+      api.blob(url.slice(4)).then((blob) => {
+        const objUrl = URL.createObjectURL(blob);
+        const img = el('img', { src: objUrl, alt: title || 'หลักฐาน' });
+        box.replaceChildren(el('a', { href: objUrl, target: '_blank', rel: 'noopener' }, img));
+      }).catch(() => { box.replaceChildren('🖼'); });
+      return box;
+    }
     const img = el('img', { src: url, alt: title || 'หลักฐาน', loading: 'lazy' });
     img.addEventListener('error', () => { box.replaceChildren('🖼'); });
     box.append(el('a', { href: url, target: '_blank', rel: 'noopener' }, img));

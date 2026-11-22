@@ -24,6 +24,9 @@ router.get('/disputes', requireAuth, requireRole('member'), ctrl.listMine);
 // 9.2 ผู้ซื้อ/ผู้ขายของ Order หรือแอดมิน — ตรวจสิทธิ์ใน service
 router.get('/disputes/:id', requireAuth, ctrl.getDispute);
 
+// 9.7 ไฟล์รูปหลักฐาน (ตรวจสิทธิ์เหมือน 9.2)
+router.get('/disputes/:id/evidence/:evidenceId', requireAuth, ctrl.getEvidenceFile);
+
 // 9.3 ผู้ซื้อ/ผู้ขายของ Order
 router.post(
   '/disputes/:id/evidence',

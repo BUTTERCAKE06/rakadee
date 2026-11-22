@@ -15,6 +15,13 @@ const getDispute = asyncHandler(async (req, res) => {
   ok(res, await service.getDispute(parseId(req.params.id, 'id'), req.user));
 });
 
+// 9.7 GET /api/disputes/:id/evidence/:evidenceId — ส่งไฟล์รูปหลักฐาน
+const getEvidenceFile = asyncHandler(async (req, res) => {
+  const id = parseId(req.params.id, 'id');
+  const evidenceId = parseId(req.params.evidenceId, 'evidenceId');
+  res.sendFile(await service.getEvidenceFile(id, evidenceId, req.user));
+});
+
 // 9.3 POST /api/disputes/:id/evidence (multipart: files[1-5], note)
 const addEvidence = asyncHandler(async (req, res) => {
   const id = parseId(req.params.id, 'id');
@@ -41,4 +48,4 @@ const adminResolve = asyncHandler(async (req, res) => {
   ok(res, await service.adminResolve(parseId(req.params.id, 'id'), req.user, req.ip, req.body || {}));
 });
 
-module.exports = { openDispute, getDispute, addEvidence, listMine, adminList, adminUpdateStatus, adminResolve };
+module.exports = { openDispute, getDispute, getEvidenceFile, addEvidence, listMine, adminList, adminUpdateStatus, adminResolve };

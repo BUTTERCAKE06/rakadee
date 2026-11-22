@@ -17,6 +17,7 @@ const time = {
   autoExtendMs: minutes('AUTO_EXTEND_MINUTES', 2) * MIN, // Auto Extend 2 นาที
   autoExtendMaxCount: Number(process.env.AUTO_EXTEND_MAX_COUNT) || 10,
   endingSoonMs: minutes('ENDING_SOON_MINUTES', 60) * MIN, // "ใกล้หมดเวลา" แจ้ง Watchlist / หน้าแรก / Dashboard
+  shillWindowMs: minutes('SHILL_WINDOW_MINUTES', 7 * 24 * 60) * MIN, // detectShill: บิดร้านเดิม ≥ 5 รายการภายใน 7 วัน (api-spec 10)
   auctionDurationsDays: [1, 3, 7],
   otpExpireMs: minutes('OTP_EXPIRE_MINUTES', 5) * MIN,
   emailVerifyExpireMs: minutes('EMAIL_VERIFY_MINUTES', 24 * 60) * MIN, // ลิงก์ยืนยันอีเมล 24 ชม.

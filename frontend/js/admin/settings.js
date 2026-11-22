@@ -67,8 +67,7 @@
         const left = el('div');
         const label = el('label', null, item.label);
         label.htmlFor = `set-${key}`;
-        left.append(label);
-        if (item.description) left.append(el('div', 'meta', item.description));
+        left.append(label, el('div', 'meta', item.hint));
         const updated = when(item.updatedAt);
         if (updated && item.updatedBy) left.append(el('div', 'meta', `แก้ล่าสุด ${updated} โดย ${item.updatedBy.displayName}`));
         const right = el('div');
@@ -82,8 +81,8 @@
         inputs[key] = input;
         const err = el('div', 'field-error');
         err.id = `err-${key}`;
-        right.append(input, el('div', 'meta', item.hint), err);
-        row.append(left, right);
+        right.append(input);
+        row.append(left, right, err);
         return row;
       }));
     });

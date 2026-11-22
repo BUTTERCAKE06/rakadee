@@ -1,5 +1,4 @@
-// Auth Middleware — ข้อ 0.2, 0.3, 1 ใน docs/api-spec/api-spec.md (เจ้าของ: SA)
-// กติกา:
+// Auth Middleware — ข้อ 0.2, 0.3, 1 ใน docs/api-spec/api-spec.md 
 //   - requireAuth: ตรวจ Session Token จาก header Authorization: Bearer <token>
 //   - requireRole(...roles): ตรวจบทบาท (bidder, seller, admin, super_admin, member)
 //   - requireActiveAccount(action): ตรวจสถานะบัญชีตาม action ('login', 'bid', 'sell', 'pay')
@@ -46,11 +45,9 @@ async function findUserByToken(token) {
       u.status_reason,
       u.phone_verified_at,
       u.email_verified_at,
-      u.created_at,
-      (sp.id IS NOT NULL) AS is_seller
+      u.created_at
      FROM sessions s
      JOIN users u ON s.user_id = u.id
-     LEFT JOIN seller_profiles sp ON sp.user_id = u.id
      WHERE s.token_hash = ? AND s.revoked_at IS NULL AND s.expires_at > UTC_TIMESTAMP()
      LIMIT 1`,
     [tokenHash]
@@ -74,7 +71,7 @@ async function findUserByToken(token) {
     statusReason: r.status_reason,
     phoneVerified: Boolean(r.phone_verified_at),
     emailVerified: Boolean(r.email_verified_at),
-    isSeller: Boolean(r.is_seller),
+    isSeller: r.role === 'seller',
     sessionId: Number(r.session_id),
     createdAt: new Date(r.created_at).toISOString(),
   };
@@ -114,11 +111,9 @@ async function requireAuth(req, res, next) {
         u.status_reason,
         u.phone_verified_at,
         u.email_verified_at,
-        u.created_at,
-        (sp.id IS NOT NULL) AS is_seller
+        u.created_at
        FROM sessions s
        JOIN users u ON s.user_id = u.id
-       LEFT JOIN seller_profiles sp ON sp.user_id = u.id
        WHERE s.token_hash = ?
        LIMIT 1`,
       [tokenHash]
@@ -163,7 +158,7 @@ async function requireAuth(req, res, next) {
       statusReason: s.status_reason,
       phoneVerified: Boolean(s.phone_verified_at),
       emailVerified: Boolean(s.email_verified_at),
-      isSeller: Boolean(s.is_seller),
+      isSeller: s.role === 'seller',
       sessionId: Number(s.session_id),
       createdAt: new Date(s.created_at).toISOString(),
     };
@@ -179,7 +174,7 @@ async function requireAuth(req, res, next) {
   }
 }
 
-// กลุ่ม role ตาม api-spec 0.3
+// กลุ่ม role ตาม 
 const ROLE_GROUPS = {
   member: ['bidder', 'seller'],
   seller: ['seller'],
@@ -188,7 +183,7 @@ const ROLE_GROUPS = {
 };
 
 /**
- * Middleware ตรวจสอบ Role ของผู้ใช้ (รองรับทั้งชื่อ role เดี่ยวๆ หรือชื่อกลุ่มเช่น member, admin)
+ * Middleware ตรวจสอบ Role ของผู้ใช้
  */
 function requireRole(...groups) {
   const allowed = new Set(groups.flatMap((g) => ROLE_GROUPS[g] || [g]));
@@ -203,7 +198,7 @@ function requireRole(...groups) {
   };
 }
 
-// ตารางสิทธิ์ตามสถานะบัญชี (api-spec 0.3)
+// ตารางสิทธิ์ตามสถานะบัญชี 
 const STATUS_RULES = {
   bid: { active: true, restricted: true },
   sell: { active: true },

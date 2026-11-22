@@ -12,9 +12,10 @@ app.use(express.urlencoded({ extended: true }));
 // API
 app.use('/api', routes);
 
-// ไฟล์ที่อัปโหลด (รูปสินค้า รูปโปรไฟล์) ส่วนสลิปและหลักฐานควรเปิดผ่าน API ที่ตรวจสิทธิ์ภายหลัง
+// ไฟล์ที่อัปโหลด (รูปสินค้า รูปโปรไฟล์ สลิปโอนเงิน)
 app.use('/uploads/products', express.static(path.join(config.upload.dir, 'products')));
 app.use('/uploads/avatars', express.static(path.join(config.upload.dir, 'avatars')));
+app.use('/uploads/slips', express.static(path.join(config.upload.dir, 'slips')));
 
 // Front-end (HTML/CSS/JS) เสิร์ฟจาก server เดียวกัน
 app.use(express.static(path.join(__dirname, '..', '..', 'frontend')));

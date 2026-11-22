@@ -1,6 +1,7 @@
 // Wallet Service  — 5.1, 5.2 ใน docs/api-spec/api-spec.md
 // wallet.create(userId)
 const { withTransaction, pool } = require('../config/db');
+const { calculatePlatformFee } = require('./escrow');
 
 const INITIAL_CREDIT_AMOUNT = 10000.00;
 
@@ -73,20 +74,26 @@ async function getBalance(userId) {
 async function getWalletSummary(userId) {
   const balance = await getBalance(userId);
 
-  // คำนวณยอดเงินรอรับ (Pending Earnings จาก Escrow ที่ยัง held อยู่ของผู้ขาย)
+  // คำนวณยอดเงินรอรับ (Pending Income จาก Escrow ที่ยัง held อยู่ของผู้ขาย หักค่าธรรมเนียมตามสูตร D-10)
   const [escrowRows] = await pool.query(
-    `SELECT COALESCE(SUM(e.amount), 0) AS pending_earnings
+    `SELECT e.amount, o.item_price, o.shipping_fee
      FROM escrows e
      JOIN orders o ON e.order_id = o.id
      WHERE o.seller_id = ? AND e.status = 'held'`,
     [userId]
   );
 
-  const pendingEarnings = Number(escrowRows[0].pending_earnings || 0);
+  let pendingIncome = 0;
+  for (const row of escrowRows) {
+    const fee = calculatePlatformFee(Number(row.item_price));
+    const net = Math.max(0, Number(row.amount) - fee);
+    pendingIncome += net;
+  }
 
   return {
     balance,
-    pendingEarnings,
+    pendingIncome: Number(pendingIncome.toFixed(2)),
+    currency: 'THB',
   };
 }
 

@@ -18,7 +18,7 @@
     { href: '/pages/watchlist.html', label: 'Watchlist' },
     { href: '/pages/won.html', label: 'รายการที่ชนะ' },
     { href: '/pages/orders.html', label: 'คำสั่งซื้อ' },
-    { href: '/pages/wallet.html', label: 'Mock Wallet' },
+    { href: '/pages/wallet.html', label: 'กระเป๋าเงิน' },
     { href: '/pages/notifications.html', label: 'การแจ้งเตือน' },
     { href: '/pages/settings.html', label: 'ตั้งค่า' },
   ];

@@ -55,5 +55,13 @@ describe('สูตรคำนวณค่าธรรมเนียมแพ�
     // รองรับ input ทั้งชนิด number และ string
     assert.equal(calculatePlatformFee('4500.00'), 225.00);
   });
-});
 
+  it('ใช้ค่าตั้งจาก Super Admin ได้ (percent / min)', () => {
+    // 3% ขั้นต่ำ 10 บาท: 1,000 บาท = 30 บาท, 200 บาท = 10 บาท (ขั้นต่ำ), 5 บาท = 5 บาท (ไม่เกินราคา)
+    assert.equal(calculatePlatformFee(1000, { percent: 3, min: 10 }), 30.00);
+    assert.equal(calculatePlatformFee(200, { percent: 3, min: 10 }), 10.00);
+    assert.equal(calculatePlatformFee(5, { percent: 3, min: 10 }), 5.00);
+    // 2.5% ของ 333.33 = 8.33325 → 8.33 แต่ขั้นต่ำ 0 จึงได้ 8.33
+    assert.equal(calculatePlatformFee(333.33, { percent: 2.5, min: 0 }), 8.33);
+  });
+});

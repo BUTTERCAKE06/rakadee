@@ -96,8 +96,9 @@ docs/             decision-log.md, erd/schema.sql, api-spec/api-spec.md, qa/
 | `notify(userId, event, data)` | PM | แจ้งเตือนในเว็บ อีเมล และ Socket |
 | `audit.log(adminId, action, targetType, targetId, ip)` | PM | บันทึก Audit Log |
 | `config/time.js` | PM | ระยะเวลาทั้งหมดของระบบ |
+| `settings.get(key)` / `feeConfig()` / `initialCredit()` | PM | ค่าตั้งระบบที่ Super Admin แก้ได้ (`services/settings.js`) |
 
-ค่าธรรมเนียม (5.4): `min(max(ราคาปิด × 5%, 20), ราคาปิด)` คิดจากราคาปิดประมูลเท่านั้น ไม่รวมค่าส่ง
+ค่าธรรมเนียม (5.4): `min(max(ราคาปิด × 5%, 20), ราคาปิด)` คิดจากราคาปิดประมูลเท่านั้น ไม่รวมค่าส่ง (5% และ 20 บาทเป็นค่าเริ่มต้น Super Admin แก้ได้ อ่านค่าจริงจาก `settings.feeConfig()` ห้าม hard-code)
 
 ## Git
 

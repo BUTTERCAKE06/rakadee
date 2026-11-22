@@ -519,20 +519,15 @@ async function notifyNoWinner({ listingId, result, price, sellerId }) {
 
 /**
  * แจ้งเตือน "ใกล้หมดเวลา" (AUCTION_ENDING_SOON) ระยะจาก time.endingSoonMs (api-spec 11, PR #9)
- * เรียกจาก jobs/endingSoon.js ทุกรอบ scheduler
- *
- * - คนใน Watchlist: กันส่งซ้ำด้วย watchlists.ending_soon_notified_at (schema.sql)
- *   จองแถวด้วย UPDATE ... WHERE ending_soon_notified_at IS NULL ก่อนส่ง จึงไม่ส่งซ้ำแม้ job ซ้อนกัน
- * - คนที่เคยบิด (ที่ไม่ได้อยู่ใน Watchlist): schema ไม่มีคอลัมน์กันส่งซ้ำ จึงส่งเฉพาะสินค้าที่
- *   "เพิ่งเข้าช่วงใกล้หมดเวลา" ระหว่างรอบก่อนถึงรอบนี้ (sinceMs) รอบแรกหลังเปิด server ไม่ส่งให้กลุ่มนี้
- *   (Auto Extend ตั้ง end_at = เวลาบิด + 2 นาที ซึ่งยังอยู่ในช่วงเดิม จึงไม่ข้ามเข้าช่วงซ้ำ)
- *
+ * เรียกจาก jobs/endingSoon.js ทุกรอบ scheduler กันส่งซ้ำด้วยคอลัมน์ในฐานข้อมูล (ปิด/เปิด server ใหม่ก็ไม่ส่งซ้ำหรือตกหล่น)
+ * - คนใน Watchlist: watchlists.ending_soon_notified_at ต่อคน
+ * - คนที่เคยบิด (ไม่ได้อยู่ใน Watchlist): listings.ending_soon_notified_at ต่อสินค้า ส่งครั้งเดียวตอนเข้าช่วง
+ * จองแถวด้วย UPDATE ... WHERE ... IS NULL ก่อนส่ง จึงไม่ส่งซ้ำแม้ job ซ้อนกัน
  * @param {object} [p]
- * @param {number|null} [p.sinceMs] เวลาที่รอบก่อนทำงาน (ms) null = รอบแรก
  * @param {number} [p.nowMs]
  * @returns {Promise<{ watchers: number, bidders: number }>}
  */
-async function notifyEndingSoon({ sinceMs = null, nowMs = Date.now() } = {}) {
+async function notifyEndingSoon({ nowMs = Date.now() } = {}) {
   const now = new Date(nowMs);
   const until = new Date(nowMs + time.endingSoonMs);
   let watchers = 0;
@@ -554,19 +549,22 @@ async function notifyEndingSoon({ sinceMs = null, nowMs = Date.now() } = {}) {
     watchers += 1;
   }
 
-  if (sinceMs !== null && sinceMs < nowMs) {
-    const [listingRows] = await db.query(
-      `SELECT id FROM listings
-        WHERE status = 'active' AND end_at > ? AND end_at > ? AND end_at <= ?`,
-      [now, new Date(sinceMs + time.endingSoonMs), until],
+  const [listingRows] = await db.query(
+    `SELECT id FROM listings
+      WHERE status = 'active' AND end_at > ? AND end_at <= ? AND ending_soon_notified_at IS NULL`,
+    [now, until],
+  );
+  for (const { id } of listingRows) {
+    const [res] = await db.query(
+      'UPDATE listings SET ending_soon_notified_at = UTC_TIMESTAMP() WHERE id = ? AND ending_soon_notified_at IS NULL',
+      [id],
     );
-    for (const { id } of listingRows) {
-      const watching = new Set((await watcherIds(id)).map(String));
-      for (const userId of await bidderIds(id)) {
-        if (watching.has(String(userId))) continue; // ได้จาก Watchlist แล้ว
-        await safeNotify(userId, EVENTS.AUCTION_ENDING_SOON, { listingId: id });
-        bidders += 1;
-      }
+    if (res.affectedRows !== 1) continue;
+    const watching = new Set((await watcherIds(id)).map(String));
+    for (const userId of await bidderIds(id)) {
+      if (watching.has(String(userId))) continue; // ได้จาก Watchlist แล้ว
+      await safeNotify(userId, EVENTS.AUCTION_ENDING_SOON, { listingId: id });
+      bidders += 1;
     }
   }
   return { watchers, bidders };

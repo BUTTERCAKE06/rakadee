@@ -528,8 +528,8 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | 11.3 | POST | `/api/notifications/:id/read` | login | อ่านแล้ว |
 | 11.4 | POST | `/api/notifications/read-all` | login | อ่านทั้งหมด |
 | 11.5 | GET | `/api/admin/dashboard` | admin | สถิติภาพรวม |
-| 11.6 | GET | `/api/admin/dashboard/charts` | admin | ข้อมูลกราฟ (`?range=7d|30d&group=day|week`) |
-| 11.7 | GET | `/api/admin/audit-logs` | admin | Audit Log (`?adminId=&action=&from=&to=`) |
+| 11.6 | GET | `/api/admin/dashboard/charts` | admin | ข้อมูลกราฟ (`?range=7d|30d|90d&group=day|week`) |
+| 11.7 | GET | `/api/admin/audit-logs` | admin | Audit Log (`?adminId=&action=&from=&to=&sort=`) |
 | 11.8 | GET | `/api/admin/settings` | super_admin | ดูตั้งค่าระบบ |
 | 11.9 | PUT | `/api/admin/settings` | super_admin | แก้ตั้งค่าระบบ |
 
@@ -553,9 +553,13 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 
 **11.5** → `{ users: { total, newToday, pendingVerification, restricted }, sellers: { pendingReview }, listings: { active, pendingReview, endingWithinHour }, orders: { pendingPayment, paymentReview, awaitingShipment, shipped, completedToday }, money: { escrowHeld, feesCollected, gmvToday }, disputes: { open }, generatedAt }` ("วันนี้" นับตามเวลาไทย, `gmvToday` = ยอด `total_amount` ของ Order ที่แอดมินอนุมัติการชำระวันนี้)
 
-**11.6** → `{ labels: ["2026-11-01", ...], completedAuctions: [3, 5, ...], gmv: [12000.00, ...] }`
+**11.6** → `{ range, group, labels: ["2026-11-01", ...], completedAuctions: [3, 5, ...], salesValue: [9600.00, ...], gmv: [12000.00, ...], fees: [480.00, ...], byCategory: [{ name, count, value }], orderStatus: [{ status, count }], generatedAt }`
+- `labels` = วันที่ตามเวลาไทย (`group=week` = วันจันทร์ของสัปดาห์) ครบทุกช่วง ช่วงที่ไม่มีข้อมูลเป็น 0
+- `completedAuctions` / `salesValue` = จำนวน / ผลรวม `item_price` ของ Order ที่เกิดในช่วงนั้น (ชนะประมูล + ซื้อทันที) ไม่นับ `cancelled`
+- `gmv` = `total_amount` ตาม `paid_at` (นิยามเดียวกับ `gmvToday`) · `fees` = `fee_amount` ของ Escrow ที่ `released` ตาม `released_at`
+- `byCategory` = ยอดขายในช่วงเดียวกันแยกหมวดหลัก เรียงมากไปน้อย · `orderStatus` = จำนวน Order ทุกสถานะ ณ ตอนนี้ (ไม่ขึ้นกับช่วง)
 
-**11.7** query `adminId` (Super Admin เท่านั้น), `action`, `targetType`, `from`, `to` (`YYYY-MM-DD` ตามเวลาไทย) → `{ items: [{ id, admin: { id, displayName }, action, targetType, targetId, detail, ipAddress, createdAt }], page, limit, total, filters: { actions, admins } }` (Admin เห็นเฉพาะของตัวเอง)
+**11.7** query `adminId` (Super Admin เท่านั้น), `action`, `targetType`, `from`, `to` (`YYYY-MM-DD` ตามเวลาไทย), `sort` (`newest` ค่าเริ่มต้น / `oldest` / `admin` / `action`) → `{ items: [{ id, admin: { id, displayName }, action, targetType, targetId, detail, ipAddress, createdAt }], page, limit, total, filters: { actions, admins } }` (Admin เห็นเฉพาะของตัวเอง)
 
 **11.8 / 11.9** `{ "settings": { "platform_fee_percent": "5", "platform_fee_min": "20", ... } }` → ค่าใหม่ทั้งหมด + `audit.log(SETTING_UPDATE)` · Errors: `INVALID_SETTING` (400)
 

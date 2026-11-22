@@ -10,6 +10,10 @@
     .dash-section { margin-top: 24px; }
     .dash-section h2 { font-size: 18px; margin: 0 0 12px; }
     .updated { color: var(--color-muted); font-size: 13px; }
+    .dash-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .dash-head h2 { margin: 0; }
+    .chart-controls { display: flex; gap: 8px; }
+    .chart-controls select { width: auto; }
   </style>
 </head>
 <body class="admin-page">
@@ -27,6 +31,46 @@
         <div class="stat-grid" id="todo"></div>
       </section>
       <section class="dash-section">
+        <div class="dash-head">
+          <h2>ภาพรวมธุรกิจ</h2>
+          <div class="chart-controls">
+            <label class="sr-only" for="chart-range">ช่วงเวลา</label>
+            <select id="chart-range">
+              <option value="7d">7 วันล่าสุด</option>
+              <option value="30d" selected>30 วันล่าสุด</option>
+              <option value="90d">90 วันล่าสุด</option>
+            </select>
+            <label class="sr-only" for="chart-group">จัดกลุ่ม</label>
+            <select id="chart-group">
+              <option value="day" selected>รายวัน</option>
+              <option value="week">รายสัปดาห์</option>
+            </select>
+          </div>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-card">
+            <h3>ยอดปิดการขาย</h3>
+            <p class="sub">มูลค่าสินค้าที่ปิดประมูลได้ผู้ชนะหรือถูกซื้อทันที (บาท)</p>
+            <div class="chart-box"><canvas id="chart-sales" aria-label="กราฟยอดปิดการขาย" role="img"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3>เงินที่ชำระและค่าธรรมเนียม</h3>
+            <p class="sub">ยอดที่แอดมินอนุมัติการชำระ เทียบกับค่าธรรมเนียมที่ได้รับ (บาท)</p>
+            <div class="chart-box"><canvas id="chart-money" aria-label="กราฟเงินที่ชำระและค่าธรรมเนียม" role="img"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3>ยอดขายตามหมวดหมู่</h3>
+            <p class="sub">สัดส่วนมูลค่าการขายในช่วงเวลาที่เลือก</p>
+            <div class="chart-box"><canvas id="chart-category" aria-label="กราฟยอดขายตามหมวดหมู่" role="img"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3>สถานะคำสั่งซื้อทั้งหมด</h3>
+            <p class="sub">จำนวนคำสั่งซื้อแต่ละสถานะ ณ ตอนนี้</p>
+            <div class="chart-box"><canvas id="chart-status" aria-label="กราฟสถานะคำสั่งซื้อ" role="img"></canvas></div>
+          </div>
+        </div>
+      </section>
+      <section class="dash-section">
         <h2>ผู้ใช้และสินค้า</h2>
         <div class="stat-grid" id="users"></div>
       </section>
@@ -38,6 +82,7 @@
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/vendor/chart-4.4.1.umd.js"></script>
   <script src="/js/admin/admin-shell.js"></script>
   <script src="/js/admin/dashboard.js"></script>
 </body>

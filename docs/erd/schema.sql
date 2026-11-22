@@ -329,7 +329,8 @@ CREATE TABLE orders (
   payment_reminded_at  DATETIME NULL,               -- กันแจ้งเตือน 24 ชม. ซ้ำ
   paid_at              DATETIME NULL,               -- แอดมินอนุมัติการชำระ
   ship_due_at          DATETIME NULL,               -- paid_at + time.shippingDueMs
-  ship_reminded_at     DATETIME NULL,
+  ship_reminded_at     DATETIME NULL,               -- เตือนผู้ขายแล้ว (เหลือ time.shipReminderBeforeMs)
+  ship_overdue_notified_at DATETIME NULL,           -- แจ้งผู้ซื้อแล้วว่าเลยกำหนดส่ง ยกเลิกได้ (กันแจ้งซ้ำ)
   shipped_at           DATETIME NULL,
   auto_release_at      DATETIME NULL,               -- shipped_at + time.autoReleaseMs
   completed_at         DATETIME NULL,

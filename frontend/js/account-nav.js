@@ -7,9 +7,12 @@ document.addEventListener('user:ready', (e) => {
   const user = e.detail;
   const items = [...(window.ACCOUNT_LINKS || [])];
   if (user && (user.role === 'bidder' || user.role === 'seller')) {
-    items.push(user.isSeller
-      ? { href: '/pages/seller/listings.html', label: 'ร้านของฉัน' }
-      : { href: '/pages/seller/open-shop.html', label: 'เปิดสิทธิ์ผู้ขาย' });
+    if (user.isSeller) {
+      items.push({ href: '/pages/seller/listings.html', label: 'ร้านของฉัน' },
+        { href: '/pages/seller/shipments.html', label: 'รอจัดส่ง' });
+    } else {
+      items.push({ href: '/pages/seller/open-shop.html', label: 'เปิดสิทธิ์ผู้ขาย' });
+    }
   } else {
     // แอดมินไม่มีเมนูของสมาชิก เหลือเฉพาะตั้งค่า
     items.splice(0, items.length, { href: '/pages/settings.html', label: 'ตั้งค่า' },

@@ -8,6 +8,7 @@ const ADMIN_NAV = [
   { href: '/pages/admin/listings.html', label: 'ตรวจสอบและอนุมัติสินค้า',
     match: ['/pages/admin/listings.html', '/pages/admin/listing-detail.html'] },
   { href: '/pages/admin/payments.html', label: 'ตรวจสอบการชำระเงิน', match: ['/pages/admin/payments.html'] },
+  { href: '/pages/admin/orders.html', label: 'คำสั่งซื้อทั้งหมด', match: ['/pages/admin/orders.html'] },
   { href: '/pages/admin/disputes.html', label: 'จัดการข้อพิพาทและคำร้อง', match: ['/pages/admin/disputes.html'] },
   { href: '/pages/admin/audit-logs.html', label: 'บันทึกการทำงาน (Audit Log)', match: ['/pages/admin/audit-logs.html'] },
 ];

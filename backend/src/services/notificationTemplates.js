@@ -9,6 +9,8 @@ const item = (d) => d.listingTitle || (d.listingId ? `สินค้า #${d.li
 const price = (d) => d.amount ?? d.currentPrice ?? d.price ?? d.finalPrice;
 const hours = (ms) => Math.round(ms / 3600000);
 const minutes = (ms) => Math.round(ms / 60000);
+// วันเวลาตามเวลาไทยในข้อความ เช่น "25 พ.ย. 2569 14:30 น."
+const thaiTime = (v) => `${new Date(v).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} น.`;
 const order = (d) => (d.orderId ? `#ORD-${d.orderId}` : '');
 
 const listingLink = (d) => (d.listingId ? `/pages/listing.html?id=${d.listingId}` : null);
@@ -121,7 +123,25 @@ const TEMPLATES = {
   SHIPPED: {
     group: 'shipping',
     title: () => 'ผู้ขายส่งของแล้ว',
-    message: (d) => `คำสั่งซื้อ ${order(d)}${d.trackingNumber ? ` เลขพัสดุ ${d.trackingNumber}` : ''}${d.carrier ? ` (${d.carrier})` : ''}`,
+    message: (d) => `คำสั่งซื้อ ${order(d)}${d.trackingNumber ? ` เลขพัสดุ ${d.trackingNumber}` : ''}${d.carrier ? ` (${d.carrier})` : ''} ได้รับแล้วกดยืนยันรับสินค้า ไม่กดภายใน ${Math.round(time.autoReleaseMs / 86400000)} วันระบบปล่อยเงินให้ผู้ขายอัตโนมัติ`,
+    link: orderLink,
+  },
+  SHIP_DUE_SOON: {
+    group: 'shipping',
+    title: () => 'ใกล้ครบกำหนดจัดส่ง',
+    message: (d) => `คำสั่งซื้อ ${order(d)} ต้องบันทึกการจัดส่ง${d.shipDueAt ? `ก่อน ${thaiTime(d.shipDueAt)}` : `ภายใน ${hours(time.shipReminderBeforeMs)} ชม.`} ไม่ส่งตามกำหนดผู้ซื้อยกเลิกได้และบัญชีจะถูกจำกัดสิทธิ์`,
+    link: orderLink,
+  },
+  SHIP_OVERDUE: {
+    group: 'shipping',
+    title: () => 'ผู้ขายยังไม่จัดส่งตามกำหนด',
+    message: (d) => `คำสั่งซื้อ ${order(d)} เลยกำหนดส่งแล้ว คุณขอยกเลิกและรับเงินคืนเต็มจำนวนได้`,
+    link: orderLink,
+  },
+  ORDER_CANCELLED: {
+    group: 'shipping',
+    title: () => 'คำสั่งซื้อถูกยกเลิก',
+    message: (d) => `คำสั่งซื้อ ${order(d)} ถูกผู้ซื้อยกเลิกเพราะไม่จัดส่งตามกำหนด เงินคืนผู้ซื้อแล้ว`,
     link: orderLink,
   },
   DISPUTE_OPENED: {

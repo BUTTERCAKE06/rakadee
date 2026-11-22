@@ -27,6 +27,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; font-family: var(--font); color: var(--color-text); background: var(--color-bg); line-height: 1.6; }
 a { color: var(--color-primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -42,6 +43,7 @@ main.container { padding-top: 24px; padding-bottom: 48px; }
 .navbar .brand-logo { width: 32px; height: 32px; border-radius: var(--radius); background: var(--color-primary); color: #fff;
   display: flex; align-items: center; justify-content: center; font-size: 16px; }
 .navbar .links { display: flex; gap: 16px; flex: 1; flex-wrap: wrap; }
+.navbar .links a { white-space: nowrap; }
 .navbar .links a { color: var(--color-text); }
 .navbar .actions { display: flex; gap: 8px; align-items: center; }
 
@@ -167,8 +169,10 @@ a.stat-card:hover { text-decoration: none; border-color: var(--color-primary); }
 .chart-card .chart-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--color-muted); font-size: 14px; }
 @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
 
+@media (max-width: 1320px) { .navbar .container { gap: 16px; } .nav-search { width: 200px; } }
+
 @media (max-width: 860px) {
-  .account-layout { grid-template-columns: 1fr; }
+  .account-layout { grid-template-columns: minmax(0, 1fr); }
   .account-nav nav { flex-direction: row; overflow-x: auto; }
   .account-nav a { white-space: nowrap; }
   .nav-search { order: 5; width: 100%; }

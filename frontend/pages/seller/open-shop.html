@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>เปิดสิทธิ์ผู้ขาย — Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/qa.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container account-layout">
+    <aside class="account-nav" id="account-nav"></aside>
+
+    <section>
+      <h1 class="page-title">เปิดสิทธิ์ผู้ขาย</h1>
+      <div id="alert-area" aria-live="polite"></div>
+
+      <!-- สถานะคำขอ (รออนุมัติ / ไม่ผ่าน / เป็นผู้ขายแล้ว) -->
+      <div id="state-box" class="card qa-state" hidden></div>
+
+      <form id="form-open-shop" class="card" novalidate hidden>
+        <h2 class="qa-card-title">ข้อมูลร้านค้า</h2>
+        <p class="muted" style="margin-top:0;">เปิดสิทธิ์เพื่อลงสินค้าประมูล ค่าธรรมเนียมผู้ขาย 5% ของราคาปิด (ขั้นต่ำ 20 บาท) แอดมินจะตรวจข้อมูลก่อนอนุมัติร้าน</p>
+
+        <div id="email-box"></div>
+
+        <div class="form-group">
+          <label for="shopName">ชื่อร้านค้า <span class="qa-required">*</span></label>
+          <input type="text" id="shopName" maxlength="100" placeholder="เช่น ร้านโอตาคุคอลเลคชัน" />
+          <span class="field-error" id="err-shopName"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="shopDescription">รายละเอียดร้าน</label>
+          <textarea id="shopDescription" rows="3" maxlength="1000" placeholder="ขายฟิกเกอร์ โมเดล และของสะสมมือหนึ่ง..."></textarea>
+          <span class="hint">แสดงในโปรไฟล์ร้านสาธารณะ</span>
+          <span class="field-error" id="err-shopDescription"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="originProvince">จังหวัดต้นทาง <span class="qa-required">*</span></label>
+          <select id="originProvince">
+            <option value="">— เลือกจังหวัด —</option>
+          </select>
+          <span class="hint">ใช้คำนวณการจัดส่ง</span>
+          <span class="field-error" id="err-originProvince"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="addressId">ที่อยู่ส่งของ / รับคืน <span class="qa-required">*</span></label>
+          <select id="addressId">
+            <option value="">— เลือกจากสมุดที่อยู่ —</option>
+          </select>
+          <span class="hint" id="address-hint">แอดมินใช้ตรวจสอบที่อยู่จริงของร้าน <a href="/pages/settings.html#addresses">จัดการสมุดที่อยู่</a></span>
+          <span class="field-error" id="err-addressId"></span>
+        </div>
+
+        <label class="qa-check">
+          <input type="checkbox" id="acceptFee" />
+          <span>ยอมรับการหักค่าธรรมเนียมผู้ขาย 5% (ขั้นต่ำ 20 บาท)</span>
+        </label>
+        <span class="field-error" id="err-acceptFee"></span>
+
+        <div class="row-actions" style="margin-top:8px;">
+          <button type="submit" class="btn btn-accent" id="btn-submit">ยื่นขอเปิดร้าน</button>
+          <button type="button" class="btn" id="btn-cancel-edit" hidden>ยกเลิก</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/account-nav.js"></script>
+  <script src="/js/qa-common.js"></script>
+  <script src="/js/seller/open-shop.js"></script>
+</body>
+</html>

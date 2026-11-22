@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>รายการที่ชนะ - RAKADEE</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/auction.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container au-page account-layout">
+    <aside class="account-nav" id="account-nav"></aside>
+      <section>
+        <h1>รายการที่ชนะ</h1>
+        <div id="msg" aria-live="polite"></div>
+        <div class="au-table-wrap"><table>
+          <thead><tr><th>สินค้า</th><th>ราคาที่ชนะ</th><th>กำหนดชำระ</th><th>สถานะคำสั่งซื้อ</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table></div>
+      </section>
+  </main>
+
+  <footer class="au-footer">
+    <div class="container">
+      <div>RAKADEE — แพลตฟอร์มประมูลสินค้าออนไลน์ มีระบบพักเงินกลาง (Escrow) ปลอดภัยทั้งผู้ซื้อและผู้ขาย</div>
+      <div><a href="/pages/terms.html">เงื่อนไขการให้บริการ</a> · <a href="/pages/terms.html#privacy">นโยบายความเป็นส่วนตัว (PDPA)</a> · <a href="/pages/help.html">ช่วยเหลือ</a> · © 2026 RAKADEE</div>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/account-nav.js"></script>
+  <script src="/js/auction-common.js"></script>
+  <script src="/js/won.js"></script>
+</body>
+</html>

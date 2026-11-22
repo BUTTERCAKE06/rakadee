@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>คำสั่งซื้อ | Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/orders.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container account-layout">
+    <aside class="account-nav" id="account-nav"></aside>
+
+    <section id="list-view">
+      <h1 class="page-title">คำสั่งซื้อ</h1>
+      <div id="alert"></div>
+
+      <div class="tabs" role="tablist" id="role-tabs" hidden>
+        <button type="button" role="tab" data-role="buyer" aria-selected="true">ที่ฉันซื้อ</button>
+        <button type="button" role="tab" data-role="seller" aria-selected="false">ที่ฉันขาย</button>
+      </div>
+
+      <div class="order-toolbar">
+        <div class="tabs" role="tablist" id="status-tabs" aria-label="สถานะคำสั่งซื้อ"></div>
+      </div>
+
+      <div class="order-list" id="list" aria-live="polite"></div>
+      <div class="pager" id="pager"></div>
+    </section>
+
+    <section id="detail-view" hidden></section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/account-nav.js"></script>
+  <script src="/js/order-view.js"></script>
+  <script src="/js/orders.js"></script>
+</body>
+</html>

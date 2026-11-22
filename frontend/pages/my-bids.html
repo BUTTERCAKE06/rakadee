@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>การประมูลของฉัน - RAKADEE</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/auction.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container au-page account-layout">
+    <aside class="account-nav" id="account-nav"></aside>
+      <section>
+        <h1>การประมูลของฉัน</h1>
+        <div id="msg" aria-live="polite"></div>
+        <div id="tabs" class="au-tabs" role="tablist"></div>
+        <div class="au-table-wrap"><table>
+          <thead><tr><th>สินค้า</th><th>ราคาปัจจุบัน</th><th>ราคาที่ฉันบิดสูงสุด</th><th>สถานะ</th><th>เวลาที่เหลือ</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table></div>
+      </section>
+  </main>
+
+  <footer class="au-footer">
+    <div class="container">
+      <div>RAKADEE — แพลตฟอร์มประมูลสินค้าออนไลน์ มีระบบพักเงินกลาง (Escrow) ปลอดภัยทั้งผู้ซื้อและผู้ขาย</div>
+      <div><a href="/pages/terms.html">เงื่อนไขการให้บริการ</a> · <a href="/pages/terms.html#privacy">นโยบายความเป็นส่วนตัว (PDPA)</a> · <a href="/pages/help.html">ช่วยเหลือ</a> · © 2026 RAKADEE</div>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/account-nav.js"></script>
+  <script src="/js/auction-common.js"></script>
+  <script src="/js/my-bids.js"></script>
+</body>
+</html>

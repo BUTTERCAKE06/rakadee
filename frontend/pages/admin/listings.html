@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>อนุมัติสินค้า — Admin | Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+  <link rel="stylesheet" href="/css/qa.css" />
+</head>
+<body class="admin-page">
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+
+  <div class="admin-main">
+    <div class="admin-topbar" id="admin-topbar" data-title="อนุมัติสินค้า"></div>
+
+    <main class="admin-content">
+      <div id="alert-area" aria-live="polite"></div>
+
+      <div class="qa-chips" id="chips" aria-label="กรองสถานะ">
+        <button type="button" class="qa-pill is-warning is-on" data-status="pending_review">รอตรวจสอบ <span id="pending-count"></span></button>
+        <button type="button" class="qa-pill" data-status="">ทั้งหมดทุกสถานะ</button>
+      </div>
+
+      <div class="qa-grid-main is-list-panel">
+        <section>
+          <div class="qa-table-wrap">
+            <table>
+              <thead><tr><th>สินค้า</th><th>ผู้ขาย</th><th>หมวด</th><th>ราคาเริ่มต้น</th><th></th></tr></thead>
+              <tbody id="rows"><tr><td colspan="5" class="empty">กำลังโหลด...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="qa-pagination" id="pagination"></div>
+        </section>
+
+        <aside class="card" id="panel">
+          <h2 class="qa-card-title">รายละเอียดสินค้า</h2>
+          <p class="muted" style="margin:0;">กด "ดู" ที่รายการเพื่อตรวจสอบ</p>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/admin-shell.js"></script>
+  <script src="/js/qa-common.js"></script>
+  <script src="/js/admin/listings.js"></script>
+</body>
+</html>

@@ -12,7 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 // API
 app.use('/api', routes);
 
-// ไฟล์ที่อัปโหลด (รูปสินค้า รูปโปรไฟล์) ส่วนสลิปและหลักฐานควรเปิดผ่าน API ที่ตรวจสิทธิ์ภายหลัง
+// ไฟล์ที่อัปโหลดแบบสาธารณะ (รูปสินค้า รูปโปรไฟล์) ส่วนสลิป หลักฐาน เปิดผ่าน API ที่ตรวจสิทธิ์
 app.use('/uploads/products', express.static(path.join(config.upload.dir, 'products')));
 app.use('/uploads/avatars', express.static(path.join(config.upload.dir, 'avatars')));
 

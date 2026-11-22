@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>กระเป๋าเงิน (Wallet) - Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .wallet-header { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px; }
+    
+    .stat-card-figma {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: calc(var(--radius) * 2);
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat-card-figma .stat-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-muted);
+      margin-bottom: 8px;
+    }
+    .stat-card-figma .stat-value {
+      font-size: 34px;
+      font-weight: 700;
+      color: var(--color-text);
+      letter-spacing: -0.5px;
+    }
+    .stat-card-figma .stat-sub {
+      font-size: 13px;
+      color: var(--color-success);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .stat-card-figma.pending .stat-value {
+      color: var(--color-warning);
+    }
+    .stat-card-figma.pending .stat-sub {
+      color: var(--color-muted);
+    }
+
+    /* Tooltip */
+    .tooltip-container {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      cursor: help;
+      margin-left: 6px;
+    }
+    .tooltip-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      background: var(--color-border);
+      color: var(--color-muted);
+      font-size: 11px;
+      font-weight: 700;
+      transition: all 0.15s;
+    }
+    .tooltip-container:hover .tooltip-icon {
+      background: var(--color-primary);
+      color: var(--color-surface);
+    }
+    .tooltip-text {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--color-text);
+      color: var(--color-surface);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      line-height: 1.4;
+      font-weight: 400;
+      white-space: normal;
+      width: max-content;
+      max-width: 260px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 100;
+      transition: opacity 0.2s, visibility 0.2s;
+      pointer-events: none;
+    }
+    .tooltip-text::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: var(--color-text) transparent transparent transparent;
+    }
+    .tooltip-container:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Status Badge */
+    .badge-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1;
+    }
+    .badge-dot::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .badge-dot.green { background: color-mix(in srgb, var(--color-success) 14%, transparent); color: var(--color-success); }
+    .badge-dot.green::before { background: var(--color-success); }
+    .badge-dot.amber { background: color-mix(in srgb, var(--color-warning) 14%, transparent); color: var(--color-warning); }
+    .badge-dot.amber::before { background: var(--color-warning); }
+    .badge-dot.red { background: color-mix(in srgb, var(--color-danger) 14%, transparent); color: var(--color-danger); }
+    .badge-dot.red::before { background: var(--color-danger); }
+    .badge-dot.blue { background: color-mix(in srgb, var(--color-primary) 12%, transparent); color: var(--color-primary); }
+    .badge-dot.blue::before { background: var(--color-primary); }
+    .badge-dot.purple { background: color-mix(in srgb, var(--color-primary-dark) 12%, transparent); color: var(--color-primary-dark); }
+    .badge-dot.purple::before { background: var(--color-primary-dark); }
+    .badge-dot.slate { background: var(--color-bg); color: var(--color-muted); }
+    .badge-dot.slate::before { background: var(--color-muted); }
+
+    .amount-positive { color: var(--color-success); font-weight: 600; }
+    .amount-negative { color: var(--color-danger); font-weight: 600; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h1 style="margin: 0; font-size: 26px; color: var(--color-text);">กระเป๋าเงิน (Wallet)</h1>
+        <p class="muted" style="margin: 6px 0 0; font-size: 14px;">ระบบกระเป๋าเงินสำหรับใช้จ่ายในการประมูล</p>
+      </div>
+      <div>
+        <span class="badge-dot green">พร้อมใช้งาน</span>
+      </div>
+    </div>
+
+    <div id="alert-box" class="alert hidden"></div>
+
+    <!-- Stat Cards -->
+    <div class="wallet-header">
+      <div class="stat-card-figma">
+        <div>
+          <div class="stat-title" style="display: flex; align-items: center;">
+            <span>ยอดเงินคงเหลือในกระเป๋า</span>
+            <span class="tooltip-container" aria-label="คำอธิบายยอดคงเหลือ">
+              <span class="tooltip-icon">i</span>
+              <span class="tooltip-text">ยอดคงเหลือ = ใช้จ่ายในการประมูลและคำสั่งซื้อได้ทันที</span>
+            </span>
+          </div>
+          <div class="stat-value">฿<span id="wallet-balance">0.00</span></div>
+        </div>
+        <div class="stat-sub">
+          <span>ใช้จ่ายในการประมูลและคำสั่งซื้อได้ทันที</span>
+        </div>
+      </div>
+
+      <div class="stat-card-figma pending hidden" id="seller-earnings-card">
+        <div>
+          <div class="stat-title" style="display: flex; align-items: center;">
+            <span>ยอดเงินรอรับ (เฉพาะผู้ขาย)</span>
+            <span class="tooltip-container" aria-label="คำอธิบายยอดรอรับ">
+              <span class="tooltip-icon">i</span>
+              <span class="tooltip-text">ยอดรอรับ = เงินขายที่พักใน Escrow จนกว่าผู้ซื้อจะกดยืนยันรับสินค้า (หักค่าธรรมเนียมแล้ว)</span>
+            </span>
+          </div>
+          <div class="stat-value">฿<span id="pending-earnings">0.00</span></div>
+        </div>
+        <div class="stat-sub">
+          <span>เงินพักใน Escrow (หักค่าธรรมเนียมแล้ว) รอผู้ซื้อยืนยันรับของ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ตารางประวัติรายได้จากการขาย (เฉพาะผู้ขาย - api-spec 7.3) -->
+    <div class="card hidden" id="seller-earnings-section" style="padding: 24px; border-radius: calc(var(--radius) * 2); margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+        <div>
+          <h3 style="margin: 0; font-size: 18px; color: var(--color-text);">ประวัติรายได้จากการขาย (Seller Earnings)</h3>
+          <p class="muted" style="margin: 4px 0 0; font-size: 13.5px;">สรุปรายได้แยกตามคำสั่งซื้อ ค่าธรรมเนียมแพลตฟอร์ม (<span data-fee-text>5% ขั้นต่ำ 20 บาท</span>) และสถานะเงินในระบบ Escrow</p>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>คำสั่งซื้อ</th>
+              <th>สินค้า</th>
+              <th>ราคาสินค้า</th>
+              <th>ค่าส่ง</th>
+              <th>ค่าธรรมเนียม (<span data-fee-percent>5</span>%)</th>
+              <th>รายได้สุทธิ</th>
+              <th>สถานะเงินใน Escrow</th>
+            </tr>
+          </thead>
+          <tbody id="earnings-tbody">
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--color-muted); padding: 24px;">กำลังโหลด...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ตารางประวัติธุรกรรม -->
+    <div class="card" style="padding: 24px; border-radius: calc(var(--radius) * 2);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0; font-size: 18px; color: var(--color-text);">ประวัติธุรกรรม</h3>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>วัน - เวลา</th>
+              <th>ประเภท</th>
+              <th>ยอดเงิน (บาท)</th>
+              <th>คงเหลือหลังทำรายการ</th>
+              <th>เลขอ้างอิง / หมายเหตุ</th>
+            </tr>
+          </thead>
+          <tbody id="tx-tbody">
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--color-muted); padding: 32px;">กำลังโหลดข้อมูลธุรกรรม...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="pagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+        <span class="muted" style="font-size: 14px;" id="total-text"></span>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn" id="btn-prev" disabled>ก่อนหน้า</button>
+          <button class="btn" id="btn-next" disabled>ถัดไป</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    // ค่าธรรมเนียมปัจจุบันจาก 11.10 (Super Admin แก้ได้) แทนข้อความตายตัว
+    api.get('/fee-config').then((f) => {
+      document.querySelectorAll('[data-fee-text]').forEach((n) => { n.textContent = `${f.percent}% ขั้นต่ำ ${f.min} บาท`; });
+      document.querySelectorAll('[data-fee-percent]').forEach((n) => { n.textContent = String(f.percent); });
+    }).catch(() => {});
+
+    // เปิดจากเมนูผู้ขาย (?view=seller): แสดง sidebar ผู้ขาย (seller-nav.js ของ QA) ให้อยู่ในส่วนผู้ขายต่อ
+    document.addEventListener('user:ready', (e) => {
+      const user = e.detail;
+      if (!user || !user.isSeller || new URLSearchParams(location.search).get('view') !== 'seller') return;
+      const main = document.querySelector('main.container');
+      const section = document.createElement('section');
+      section.append(...main.childNodes);
+      const aside = document.createElement('aside');
+      aside.className = 'account-nav';
+      aside.id = 'seller-nav';
+      main.classList.add('account-layout');
+      main.append(aside, section);
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = '/css/qa.css';
+      document.head.appendChild(css);
+      const js = document.createElement('script');
+      js.src = '/js/seller/seller-nav.js';
+      document.body.appendChild(js);
+    });
+  </script>
+  <script>
+    let currentPage = 1;
+    let currentUser = null;
+    const limit = 15;
+
+    // จับคู่ประเภทธุรกรรมกับ Badge
+    const TX_TYPE_CONFIG = {
+      initial_credit: { label: 'เครดิตแรกเข้า', isPositive: true, badgeClass: 'blue' },
+      payment: { label: 'ชำระค่าสินค้า', isPositive: false, badgeClass: 'amber' },
+      payment_refund: { label: 'คืนเงินค่าสินค้า', isPositive: true, badgeClass: 'green' },
+      sale_proceeds: { label: 'รายได้จากการขาย (หักค่าธรรมเนียม)', isPositive: true, badgeClass: 'purple' },
+      escrow_refund: { label: 'คืนเงินเต็มจำนวน (Escrow Refund)', isPositive: true, badgeClass: 'green' }
+    };
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function formatNumber(num) {
+      return Number(num || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDate(isoStr) {
+      if (!isoStr) return '-';
+      const d = new Date(isoStr);
+      return d.toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    async function loadWalletSummary() {
+      try {
+        const data = await api.get('/wallet');
+        document.getElementById('wallet-balance').textContent = formatNumber(data.balance);
+
+        const sellerCard = document.getElementById('seller-earnings-card');
+        if (currentUser && currentUser.role === 'seller') {
+          sellerCard.classList.remove('hidden');
+          const income = data.pendingIncome != null ? data.pendingIncome : (data.pendingEarnings || 0);
+          document.getElementById('pending-earnings').textContent = formatNumber(income);
+        } else {
+          sellerCard.classList.add('hidden');
+        }
+      } catch (err) {
+        showAlert(err.message || 'ไม่สามารถโหลดข้อมูลกระเป๋าเงินได้');
+      }
+    }
+
+    async function loadTransactions(page = 1) {
+      currentPage = page;
+      const tbody = document.getElementById('tx-tbody');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--color-muted); padding: 24px;">กำลังโหลด...</td></tr>';
+
+      try {
+        const res = await api.get(`/wallet/transactions?page=${page}&limit=${limit}`);
+        const items = res.items || [];
+        const total = Number(res.total != null ? res.total : items.length);
+        const pageNum = Number(res.page || page || 1);
+        const limitNum = Number(res.limit || limit || 15);
+        const totalPages = Math.max(1, Math.ceil(total / limitNum));
+
+        document.getElementById('btn-prev').disabled = (pageNum <= 1);
+        document.getElementById('btn-next').disabled = (pageNum >= totalPages);
+
+        if (items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--color-muted); padding: 32px;">ไม่พบรายการธุรกรรม</td></tr>';
+          document.getElementById('total-text').textContent = total > 0
+            ? `ไม่พบข้อมูลในหน้านี้ (หน้า ${pageNum}/${totalPages})`
+            : 'ยังไม่มีประวัติธุรกรรม';
+          return;
+        }
+
+        tbody.innerHTML = '';
+        items.forEach((item) => {
+          const cfg = TX_TYPE_CONFIG[item.type] || { label: item.type, isPositive: Number(item.amount) >= 0, badgeClass: 'slate' };
+          const sign = cfg.isPositive ? '+' : '-';
+          const amountClass = cfg.isPositive ? 'amount-positive' : 'amount-negative';
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="font-size: 13.5px; color: var(--color-muted);">${escapeHtml(formatDate(item.createdAt))}</td>
+            <td><span class="badge-dot ${cfg.badgeClass}">${escapeHtml(cfg.label)}</span></td>
+            <td class="${amountClass}" style="font-size: 15px;">${sign}฿${formatNumber(Math.abs(item.amount))}</td>
+            <td style="font-size: 14px; font-weight: 500; color: var(--color-text);">฿${formatNumber(item.balanceAfter)}</td>
+            <td style="font-size: 13px; color: var(--color-muted);">
+              ${item.referenceId ? `Ref #${escapeHtml(String(item.referenceId))}` : '-'}
+              ${item.note ? `<br><small class="muted">${escapeHtml(item.note)}</small>` : ''}
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('total-text').textContent = `แสดง ${items.length} จากทั้งหมด ${total} รายการ (หน้า ${pageNum}/${totalPages})`;
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--color-danger); padding: 24px;">เกิดข้อผิดพลาด: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    function showAlert(msg, isError = true) {
+      const box = document.getElementById('alert-box');
+      box.textContent = msg;
+      box.className = isError ? 'alert alert-error' : 'alert alert-success';
+      box.classList.remove('hidden');
+    }
+
+    document.getElementById('btn-prev').addEventListener('click', () => {
+      if (currentPage > 1) loadTransactions(currentPage - 1);
+    });
+
+    document.getElementById('btn-next').addEventListener('click', () => {
+      loadTransactions(currentPage + 1);
+    });
+
+    async function loadSellerEarnings() {
+      const section = document.getElementById('seller-earnings-section');
+      if (!currentUser || currentUser.role !== 'seller') {
+        section.classList.add('hidden');
+        return;
+      }
+      section.classList.remove('hidden');
+
+      const tbody = document.getElementById('earnings-tbody');
+      try {
+        const res = await api.get('/seller/earnings');
+        const items = res.items || [];
+        if (items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--color-muted); padding: 24px;">ยังไม่มีรายการขายสินค้า</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = '';
+        items.forEach((item) => {
+          let statusBadge = '<span class="badge-dot amber">รอรับ (held)</span>';
+          if (item.status === 'released') statusBadge = '<span class="badge-dot green">เข้ากระเป๋าแล้ว (released)</span>';
+          else if (item.status === 'refunded') statusBadge = '<span class="badge-dot red">คืนเงินผู้ซื้อ (refunded)</span>';
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>#ORD-${item.orderId}</strong></td>
+            <td>${escapeHtml(item.listingTitle || '-')}</td>
+            <td>฿${formatNumber(item.itemPrice)}</td>
+            <td>฿${formatNumber(item.shippingFee)}</td>
+            <td style="color: var(--color-danger); font-weight: 500;">-฿${formatNumber(item.feeAmount)}</td>
+            <td style="color: var(--color-success); font-weight: 700;">฿${formatNumber(item.netAmount)}</td>
+            <td>${statusBadge}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--color-danger); padding: 16px;">เกิดข้อผิดพลาด: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    // ตรวจสอบสิทธิ์เข้าสู่ระบบ
+    document.addEventListener('user:ready', (e) => {
+      currentUser = e.detail;
+      if (!currentUser) {
+        location.href = '/pages/login.html';
+        return;
+      }
+      loadWalletSummary();
+      loadSellerEarnings();
+      loadTransactions(1);
+    });
+  </script>
+</body>
+</html>

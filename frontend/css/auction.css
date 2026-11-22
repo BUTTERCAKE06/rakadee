@@ -1,0 +1,218 @@
+/* ====================================================================== */
+/* auction.css — สไตล์หน้าของ Programmer (หน้าแรก ค้นหา รายละเอียดสินค้า Watchlist การประมูลของฉัน
+   รายการที่ชนะ โปรไฟล์ผู้ขาย ช่วยเหลือ เงื่อนไขบริการ) เจ้าของ: Programmer
+   โหลดต่อจาก /css/main.css (ของ PM ไม่แก้) แบบเดียวกับ admin.css ของ PM
+   ใช้เฉพาะตัวแปรสีใน main.css สีอ่อนคำนวณจากตัวแปรเดิมด้วย color-mix ไม่ใส่สีเอง */
+/* ====================================================================== */
+
+/* ---------- หน้าฝั่งผู้ซื้อ (prefix .au-) ---------- */
+/* สไตล์หน้าฝั่งผู้ซื้อ (หน้าแรก ค้นหา รายละเอียดสินค้า Watchlist การประมูลของฉัน รายการที่ชนะ โปรไฟล์ผู้ขาย)
+   โหลดต่อจาก main.css ใช้เฉพาะตัวแปรสีที่มีอยู่ ส่วนสีอ่อนคำนวณจากตัวแปรเดิมด้วย color-mix ไม่เพิ่มสีใหม่
+   ขนาดและระยะห่างตาม wireframe Figma (jtlKmtJUJOuyrVuJHXOEuN หน้า 01–05, 13–16) สีที่ Figma ใช้แต่ main.css ไม่มี รอ PM เพิ่มตัวแปร */
+:root {
+  --au-chip: color-mix(in srgb, var(--color-border) 55%, var(--color-surface)); /* พื้นป้ายเวลา/ช่องเทา (Figma slate-100) */
+  --au-primary-tint: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+  --au-danger-tint: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+  --au-warning-tint: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface));
+  --au-success-tint: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
+}
+
+.au-page { max-width: 1120px; }
+.au-page h1 { margin: 0 0 16px; font-size: 26px; }
+.au-breadcrumb { font-size: 14px; color: var(--color-muted); margin-bottom: 16px; }
+.au-breadcrumb a { color: var(--color-muted); }
+
+
+/* การ์ดสินค้า */
+.au-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; } /* Figma: การ์ด 288px 4 ใบต่อแถวในกรอบ 1344px; .container ของ PM กว้าง 1120px การ์ดจึงแคบลงแต่ยังได้ 4 ใบ */
+.au-card { position: relative; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
+.au-card-img { display: block; aspect-ratio: 3 / 2; background: var(--au-primary-tint); object-fit: cover; width: 100%; }
+.au-card-body { padding: 14px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.au-card-title { font-weight: 600; font-size: 14px; color: var(--color-text); line-height: 1.4; min-height: 2.8em; }
+.au-card-title:hover { text-decoration: none; color: var(--color-primary); }
+.au-label { font-size: 13px; color: var(--color-muted); }
+.au-price { font-size: 22px; font-weight: 700; color: var(--color-primary-dark); }
+.au-card-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; color: var(--color-muted); margin-top: auto; padding-top: 6px; }
+.au-time { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; background: var(--au-chip); color: var(--color-text); font-size: 13px; white-space: nowrap; }
+.au-time::before { content: ''; width: 13px; height: 13px; flex-shrink: 0; background: currentColor; -webkit-mask: var(--au-icon-clock) center / contain no-repeat; mask: var(--au-icon-clock) center / contain no-repeat; }
+.au-time.urgent { background: var(--au-danger-tint); color: var(--color-danger); }
+.au-heart { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-muted); font-size: 18px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+.au-heart[aria-pressed="true"] { color: var(--color-danger); border-color: var(--color-danger); }
+
+/* หัวข้อส่วน */
+.au-section-head { display: flex; justify-content: space-between; align-items: baseline; margin: 40px 0 24px; }
+.au-section-head h2 { margin: 0; font-size: 22px; }
+
+/* หน้าแรก */
+.au-hero { background: var(--color-primary-dark); color: var(--color-surface); border-radius: 12px; padding: 48px 56px; display: grid; grid-template-columns: 1fr 360px; gap: 48px; align-items: center; }
+.au-hero h1 { color: var(--color-surface); font-size: 34px; line-height: 1.45; margin: 0 0 16px; }
+.au-hero p { margin: 0 0 20px; }
+.au-hero .btn-light { background: var(--color-surface); color: var(--color-primary-dark); border-color: var(--color-surface); }
+.au-hero-art { background: var(--au-primary-tint); border-radius: 12px; min-height: 220px; }
+.au-cats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+.au-cat { display: flex; align-items: center; gap: 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 16px 12px; min-height: 74px; color: var(--color-text); font-size: 14px; line-height: 1.4; }
+.au-cat:hover { text-decoration: none; border-color: var(--color-primary); }
+.au-cat-icon { width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--radius); background: var(--au-primary-tint); display: grid; place-items: center; color: var(--color-primary); }
+.au-cat-icon::before { content: ''; width: 20px; height: 20px; background: currentColor; -webkit-mask: var(--au-icon-image) center / contain no-repeat; mask: var(--au-icon-image) center / contain no-repeat; }
+
+/* ค้นหา */
+.au-layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start; }
+.au-filter h2 { margin: 0 0 12px; font-size: 18px; }
+.au-filter fieldset { border: 0; padding: 0; margin: 0 0 16px; }
+.au-filter legend { font-weight: 600; margin-bottom: 6px; padding: 0; }
+.au-check { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-weight: 400; }
+.au-price-range { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.au-price-range input { width: 100%; }
+.au-searchbar { display: flex; gap: 8px; margin-bottom: 16px; }
+.au-searchbar input { flex: 1; min-width: 0; }
+.au-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.au-toolbar strong { font-size: 18px; }
+.au-pager { display: flex; justify-content: center; gap: 8px; margin-top: 28px; flex-wrap: wrap; }
+.au-pager button { min-width: 36px; height: 36px; border: 1px solid var(--color-border); background: var(--color-surface); border-radius: var(--radius); font: inherit; cursor: pointer; }
+.au-pager button[aria-current="page"] { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-surface); }
+.au-pager button:disabled { opacity: .5; cursor: not-allowed; }
+.au-empty { text-align: center; padding: 48px 16px; color: var(--color-muted); }
+
+/* รายละเอียดสินค้า */
+.au-detail { display: grid; grid-template-columns: 700fr 612fr; gap: 32px; align-items: start; }
+.au-gallery-main { aspect-ratio: 3 / 2; background: var(--au-primary-tint); border-radius: var(--radius); border: 1px solid var(--color-border); object-fit: cover; width: 100%; display: block; }
+.au-thumbs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 12px; }
+.au-thumb { aspect-ratio: 4 / 3; background: var(--au-primary-tint); border-radius: var(--radius); border: 1px solid var(--color-border); cursor: pointer; padding: 0; }
+.au-thumb[aria-pressed="true"] { border-color: var(--color-primary); outline: 2px solid var(--color-primary); }
+.au-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.au-detail h1 { font-size: 28px; line-height: 1.3; margin: 0 0 16px; }
+.au-box { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+.au-price-big { font-size: 38px; font-weight: 700; color: var(--color-primary-dark); line-height: 1.2; }
+.au-countdown { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 12px 0; }
+.au-cd-cell { background: var(--au-danger-tint); border-radius: var(--radius); text-align: center; padding: 10px 4px; }
+.au-cd-cell strong { display: block; font-size: 26px; color: var(--color-danger); line-height: 1.2; }
+.au-cd-cell span { font-size: 13px; color: var(--color-danger); }
+.au-countdown.closed .au-cd-cell { background: var(--color-bg); }
+.au-countdown.closed .au-cd-cell strong, .au-countdown.closed .au-cd-cell span { color: var(--color-muted); }
+.au-extend-note { display: flex; align-items: center; gap: 8px; background: var(--au-warning-tint); color: var(--color-warning); border-radius: var(--radius); padding: 8px 12px; margin-bottom: 12px; }
+.au-extend-note::before { content: ''; width: 16px; height: 16px; flex-shrink: 0; background: currentColor; -webkit-mask: var(--au-icon-clock) center / contain no-repeat; mask: var(--au-icon-clock) center / contain no-repeat; }
+.au-bid-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.au-bid-actions .btn, .au-buynow { text-align: center; }
+.au-buynow { display: block; width: 100%; margin-top: 12px; }
+.au-lock { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 12px 14px; margin-top: 14px; color: var(--color-muted); }
+.au-hint { font-size: 13px; color: var(--color-muted); margin: 4px 0 0; }
+.au-proxy-box { background: var(--au-primary-tint); border-radius: var(--radius); padding: 14px 16px; margin-top: 16px; }
+.au-proxy-box header { display: flex; justify-content: space-between; gap: 12px; font-weight: 600; color: var(--color-primary-dark); margin-bottom: 4px; }
+.au-proxy-box .au-proxy-actions span { color: var(--color-muted); font-weight: 400; cursor: not-allowed; }
+.au-seller-card { display: flex; align-items: center; gap: 16px; }
+.au-avatar { width: 48px; height: 48px; border-radius: 999px; background: var(--au-primary-tint); color: var(--color-primary); display: grid; place-items: center; font-weight: 700; flex-shrink: 0; }
+.au-seller-card .au-grow { flex: 1; min-width: 0; }
+.au-info-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; margin-top: 24px; align-items: start; }
+.au-info-grid h2 { margin: 0 0 12px; font-size: 20px; }
+.au-info-grid dt { font-weight: 600; margin-top: 12px; }
+.au-info-grid dd { margin: 2px 0 0; }
+
+/* โปรไฟล์ผู้ขาย */
+.au-profile-head { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.au-profile-head .au-avatar { width: 88px; height: 88px; font-size: 32px; }
+.au-profile-head .au-grow { flex: 1; min-width: 240px; }
+.au-profile-head h1 { display: inline-block; margin: 0 8px 4px 0; }
+.au-stats { display: flex; gap: 28px; text-align: center; }
+.au-stats strong { display: block; font-size: 28px; color: var(--color-primary-dark); line-height: 1.2; }
+.au-stats span { font-size: 13px; color: var(--color-muted); }
+
+.au-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.au-tabs button { padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--color-border); background: var(--color-surface); font: inherit; cursor: pointer; }
+.au-tabs button[aria-selected="true"] { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-surface); }
+.au-table-wrap { overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); }
+.au-table-wrap table { min-width: 640px; }
+.au-cell-product { display: flex; align-items: center; gap: 12px; }
+.au-thumb-sm { width: 48px; height: 48px; border-radius: var(--radius); background: var(--au-primary-tint); border: 1px solid var(--color-border); flex-shrink: 0; }
+
+.au-footer { margin-top: 48px; padding: 24px 0; border-top: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-muted); font-size: 14px; }
+.au-footer a { color: var(--color-muted); }
+
+dialog.au-dialog { border: 1px solid var(--color-border); border-radius: var(--radius); padding: 24px; max-width: 420px; width: calc(100% - 32px); }
+dialog.au-dialog::backdrop { background: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.au-dialog-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; }
+
+@media (max-width: 900px) {
+  .au-layout, .au-detail, .au-info-grid, .au-hero { grid-template-columns: 1fr; }
+  .au-hero { padding: 32px 24px; }
+  .au-hero h1 { font-size: 26px; }
+}
+@media (max-width: 480px) {
+  .au-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .au-price { font-size: 18px; }
+  .au-price-big { font-size: 30px; }
+  .au-bid-actions { grid-template-columns: 1fr; }
+  .au-stats { gap: 16px; }
+}
+
+/* กันเนื้อหาใน grid ดันความกว้างเกินจอมือถือ (ตารางเลื่อนแนวนอนในกรอบของมันเอง) */
+.au-detail > *, .au-info-grid > *, .au-layout > * { min-width: 0; }
+[hidden] { display: none !important; }
+
+/* ไอคอนเส้นพื้นฐาน (รูปภาพ, นาฬิกา, กุญแจ) ตาม icon/image, icon/clock, icon/lock ใน Figma */
+:root {
+  --au-icon-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21'/%3E%3C/svg%3E");
+  --au-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
+  --au-icon-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='11' width='16' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E");
+}
+
+/* ช่องรูปที่ยังไม่มีรูป: ไอคอนรูปภาพกลางกรอบ (Figma ใช้แบบนี้ทุกจุด) */
+div.au-card-img, div.au-gallery-main, .au-thumb:empty, div.au-thumb-sm, .au-hero-art { position: relative; color: var(--color-primary); }
+div.au-card-img::after, div.au-gallery-main::after, .au-thumb:empty::after, div.au-thumb-sm::after, .au-hero-art::after {
+  content: ''; position: absolute; inset: 0; margin: auto; width: 40px; height: 40px; opacity: .35;
+  background: currentColor; -webkit-mask: var(--au-icon-image) center / contain no-repeat; mask: var(--au-icon-image) center / contain no-repeat;
+}
+div.au-gallery-main::after, .au-hero-art::after { width: 56px; height: 56px; }
+.au-thumb:empty::after, div.au-thumb-sm::after { width: 24px; height: 24px; }
+.au-lock::before { content: ''; width: 18px; height: 18px; flex-shrink: 0; background: currentColor; -webkit-mask: var(--au-icon-lock) center / contain no-repeat; mask: var(--au-icon-lock) center / contain no-repeat; }
+
+@media (max-width: 1100px) { .au-cats { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 480px) { .au-cats { grid-template-columns: repeat(2, 1fr); } .au-hero { padding: 24px; } }
+
+/* ---------- หน้าช่วยเหลือ / เงื่อนไขบริการ ---------- */
+/* สไตล์เฉพาะหน้า static (ช่วยเหลือ, เงื่อนไขบริการ) โหลดต่อจาก main.css และใช้เฉพาะตัวแปรสีที่มีอยู่ */
+.static-page { max-width: 820px; }
+.static-page h1 { margin-bottom: 4px; }
+.static-page h2 { margin-top: 32px; padding-top: 8px; border-top: 1px solid var(--color-border); scroll-margin-top: 16px; }
+.static-page h3 { margin-top: 20px; margin-bottom: 4px; }
+.static-page p, .static-page li { max-width: 70ch; }
+.static-page ul, .static-page ol { padding-left: 24px; }
+
+.toc { margin: var(--space) 0 8px; }
+.toc ul { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 8px 16px; }
+
+.note { padding: 12px var(--space); border-radius: var(--radius); border: 1px solid var(--color-warning); color: var(--color-warning); background: var(--color-surface); margin: var(--space) 0; }
+.note strong { color: inherit; }
+
+.table-wrap { overflow-x: auto; margin: 12px 0; }
+.table-wrap table { min-width: 480px; }
+
+.faq details { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 10px var(--space); margin-bottom: 8px; }
+.faq summary { cursor: pointer; font-weight: 600; }
+.faq details[open] summary { margin-bottom: 6px; }
+
+.footer-links { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--color-border); display: flex; gap: 16px; flex-wrap: wrap; }
+
+/* แท็บ ช่วยเหลือ / เงื่อนไข / PDPA ตาม Figma หน้า 05 */
+.au-tabs-links { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 24px; }
+.au-tabs-links a { padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); }
+.au-tabs-links a:hover { text-decoration: none; border-color: var(--color-primary); }
+.au-tabs-links a[aria-current="page"] { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-surface); }
+
+/* ---------- ต่อ API จริง: รูปจริง, หมวดย่อย, ปุ่ม Watchlist, ข้อความแจ้งสั้นๆ ---------- */
+.au-thumb { overflow: hidden; }
+.au-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+img.au-thumb-sm { object-fit: cover; }
+.au-row-item { display: flex; align-items: center; gap: 12px; color: var(--color-text); }
+.au-check-sub { padding-left: 22px; }
+.au-watch-btn { margin: 0 0 12px; }
+.au-watch-btn[aria-pressed="true"] { color: var(--color-danger); border-color: var(--color-danger); }
+.au-flash { position: fixed; right: 16px; bottom: 16px; z-index: 50; max-width: min(360px, calc(100vw - 32px)); }
+.au-flash .alert { margin: 0; box-shadow: 0 4px 16px color-mix(in srgb, var(--color-text) 15%, transparent); }
+/* หน้าบัญชีของเราใช้ .account-layout ของ PM: ให้ตารางเลื่อนในกรอบแทนการดันหน้าจอล้น (มือถือ) */
+.au-page.account-layout > * { min-width: 0; }
+
+/* D-17 กล่องยืนยันราคาสูงผิดปกติ: ตัวเลขตัวใหญ่ + ราคาปัจจุบัน + ส่วนต่าง */
+.au-bigbid-amount { font-size: 36px; font-weight: 700; color: var(--color-danger); line-height: 1.2; margin: 8px 0 12px; word-break: break-all; }
+.au-bigbid-rows { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0 0 12px; }
+.au-bigbid-rows dt { color: var(--color-muted); font-weight: 400; }
+.au-bigbid-rows dd { margin: 0; text-align: right; font-weight: 600; }

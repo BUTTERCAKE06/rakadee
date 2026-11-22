@@ -1,6 +1,6 @@
 // อัปโหลดไฟล์ลง backend/storage/<folder>/
 // ใช้แบบนี้: router.post('/', upload('products').array('images', 8), handler)
-// folder ที่ใช้: products, slips, evidence, avatars
+// folder ที่ใช้: products, slips, evidence, avatars, shipments (หลักฐานการส่ง เปิดผ่าน API ที่ตรวจสิทธิ์)
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -8,7 +8,7 @@ const multer = require('multer');
 const config = require('../config');
 const AppError = require('../utils/AppError');
 
-const ALLOWED_FOLDERS = ['products', 'slips', 'evidence', 'avatars'];
+const ALLOWED_FOLDERS = ['products', 'slips', 'evidence', 'avatars', 'shipments'];
 const ALLOWED_TYPES = { 'image/jpeg': '.jpg', 'image/png': '.png' };
 
 function upload(folder) {

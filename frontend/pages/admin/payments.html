@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ตรวจสอบการชำระเงิน - Admin | RAKADEE</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .pay-detail-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center; z-index: 1000;
+    }
+    .pay-detail-card {
+      background: #fff; border-radius: 12px; padding: 24px;
+      max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;
+    }
+    .slip-img-preview {
+      max-width: 100%; max-height: 280px; object-fit: contain;
+      border: 1px solid var(--color-border); border-radius: 8px; margin-top: 8px;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body class="admin-page">
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+
+  <div class="admin-main">
+    <div class="admin-topbar" id="admin-topbar" data-title="ตรวจสอบการชำระเงิน"></div>
+
+    <main class="admin-content">
+      <div id="alert-box" class="alert hidden" style="margin-bottom: 16px;"></div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <p class="muted" style="margin: 0;">ตรวจสอบและอนุมัติยอดเงินชำระค่าสินค้าเพื่อนำเข้าสู่ Escrow</p>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label for="status-filter" style="font-size: 14px; font-weight: 500;">สถานะ:</label>
+          <select id="status-filter" class="input" style="padding: 6px 12px; border-radius: var(--radius); border: 1px solid var(--color-border); font: inherit; background: var(--color-surface);">
+            <option value="pending_review" selected>รอตรวจสอบ</option>
+            <option value="success">อนุมัติแล้ว</option>
+            <option value="rejected">ปฏิเสธแล้ว</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card" style="padding: 0; overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface);">
+        <table style="width: 100%; border-collapse: collapse; margin: 0;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--color-border); background: var(--color-bg); text-align: left;">
+              <th style="padding: 12px 16px;">รหัส</th>
+              <th style="padding: 12px 16px;">คำสั่งซื้อ</th>
+              <th style="padding: 12px 16px;">ผู้ซื้อ</th>
+              <th style="padding: 12px 16px;">สินค้า</th>
+              <th style="padding: 12px 16px;">ยอดเงิน</th>
+              <th style="padding: 12px 16px;">สลิป</th>
+              <th style="padding: 12px 16px;">ครบกำหนดตรวจ</th>
+              <th style="padding: 12px 16px;">การกระทำ</th>
+            </tr>
+          </thead>
+          <tbody id="payments-tbody">
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 32px; color: var(--color-muted);">กำลังโหลดข้อมูล...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="pagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <span class="muted" style="font-size: 13.5px;" id="total-text"></span>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn" id="btn-prev" disabled>ก่อนหน้า</button>
+          <button class="btn" id="btn-next" disabled>ถัดไป</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal รายละเอียดการชำระเงิน -->
+  <div class="pay-detail-modal hidden" id="detail-modal">
+    <div class="pay-detail-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="margin: 0; font-size: 18px;" id="modal-title">รายละเอียดการชำระเงิน</h2>
+        <button type="button" class="btn" id="btn-close-detail" style="font-size: 13px; padding: 4px 8px;">✕</button>
+      </div>
+
+      <div id="modal-body" style="font-size: 14px; line-height: 1.6;">
+        กำลังโหลด...
+      </div>
+
+      <div id="modal-actions" style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--color-border);">
+        <button type="button" class="btn btn-danger" id="btn-reject-pay">ปฏิเสธการชำระเงิน</button>
+        <button type="button" class="btn btn-primary" id="btn-approve-pay">อนุมัติการชำระเงิน (เข้า Escrow)</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/admin-shell.js"></script>
+  <script>
+    let currentPage = 1;
+    let currentPaymentId = null;
+
+    function formatNumber(num) {
+      return Number(num || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function showAlert(msg, isError = true) {
+      const box = document.getElementById('alert-box');
+      box.textContent = msg;
+      box.className = isError ? 'alert alert-error' : 'alert alert-success';
+      box.classList.remove('hidden');
+    }
+
+    async function loadPayments(page = 1) {
+      currentPage = page;
+      const status = document.getElementById('status-filter').value;
+      const tbody = document.getElementById('payments-tbody');
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 24px; color: var(--color-muted);">กำลังโหลด...</td></tr>';
+
+      try {
+        const res = await api.get(`/admin/payments?status=${status}&page=${page}&limit=20`);
+        const items = res.items || [];
+        const total = res.total || 0;
+        const totalPages = Math.max(1, Math.ceil(total / (res.limit || 20)));
+
+        document.getElementById('btn-prev').disabled = (page <= 1);
+        document.getElementById('btn-next').disabled = (page >= totalPages);
+        document.getElementById('total-text').textContent = `แสดง ${items.length} จากทั้งหมด ${total} รายการ`;
+
+        if (items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 32px; color: var(--color-muted);">ไม่พบรายการชำระเงิน</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = '';
+        items.forEach((item) => {
+          const tr = document.createElement('tr');
+          const due = item.reviewDueAt ? new Date(item.reviewDueAt).toLocaleString('th-TH') : '-';
+          const slipBadge = item.hasSlip
+            ? '<span class="badge badge-success">มีสลิป</span>'
+            : '<span class="badge badge-warning">ไม่มีสลิป</span>';
+
+          tr.innerHTML = `
+            <td>#${item.paymentId}</td>
+            <td><strong>#ORD-${item.orderId}</strong></td>
+            <td>${escapeHtml(item.buyer ? item.buyer.displayName : '-')}</td>
+            <td>${escapeHtml(item.listingTitle || '-')}</td>
+            <td style="font-weight: 600; color: var(--color-primary);">฿${formatNumber(item.amount)}</td>
+            <td>${slipBadge}</td>
+            <td style="font-size: 13px; color: var(--color-muted);">${escapeHtml(due)}</td>
+            <td>
+              <button class="btn btn-inspect" data-id="${item.paymentId}" style="font-size: 12.5px; padding: 4px 10px;">
+                ตรวจสอบ
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.querySelectorAll('.btn-inspect').forEach((btn) => {
+          btn.addEventListener('click', () => openDetailModal(btn.dataset.id));
+        });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--color-danger); padding: 24px;">เกิดข้อผิดพลาด: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    async function openDetailModal(paymentId) {
+      currentPaymentId = paymentId;
+      const modal = document.getElementById('detail-modal');
+      const body = document.getElementById('modal-body');
+      const actions = document.getElementById('modal-actions');
+
+      body.innerHTML = 'กำลังโหลดรายละเอียด...';
+      modal.classList.remove('hidden');
+
+      try {
+        const res = await api.get(`/admin/payments/${paymentId}`);
+        const p = res.payment;
+        const o = res.order;
+        const b = res.buyer;
+        const s = res.seller;
+
+        document.getElementById('modal-title').textContent = `ตรวจสอบรายการชำระเงิน #${p.id} (Order #ORD-${o.id})`;
+
+        if (p.status !== 'pending_review') {
+          actions.classList.add('hidden');
+        } else {
+          actions.classList.remove('hidden');
+        }
+
+        const slipHtml = p.slipUrl ? `
+          <div style="margin-top: 12px; padding: 12px; background: var(--color-bg); border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <strong>หลักฐานสลิปการโอนเงิน:</strong>
+              <a href="#" target="_blank" rel="noopener noreferrer" class="btn slip-link" style="font-size: 12px; padding: 3px 8px; text-decoration: none;">🔍 เปิดดูรูปสลิปขนาดเต็ม</a>
+            </div>
+            <a href="#" target="_blank" rel="noopener noreferrer" class="slip-link" style="display: block;">
+              <img id="modal-slip-img" class="slip-img-preview" alt="สลิปการโอนเงิน" style="cursor: zoom-in; max-height: 280px; width: auto; max-width: 100%; border-radius: 8px; border: 1px solid var(--color-border);" title="คลิกเพื่อเปิดดูรูปสลิปขนาดเต็ม">
+            </a>
+            ${p.slipReference ? `<div style="margin-top: 6px; font-size: 13px; color: var(--color-muted);">เลขอ้างอิง: ${escapeHtml(p.slipReference)}</div>` : ''}
+          </div>
+        ` : '<div class="muted" style="margin-top: 10px;">(ไม่มีการแนบสลิปการโอนเงิน)</div>';
+
+        const methodLabel = (p.method === 'mock_wallet' || p.method === 'wallet') ? 'Wallet' : p.method;
+
+        body.innerHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <div style="padding: 10px; background: var(--color-bg); border-radius: 6px;">
+              <strong>ข้อมูลผู้ซื้อ (Payer):</strong><br>
+              ชื่อ: ${escapeHtml(b.displayName)} (@${escapeHtml(b.username)})<br>
+              เบอร์: ${escapeHtml(b.phone || '-')}<br>
+              อีเมล: ${escapeHtml(b.email || '-')}
+            </div>
+            <div style="padding: 10px; background: var(--color-bg); border-radius: 6px;">
+              <strong>ข้อมูลผู้ขาย (Seller):</strong><br>
+              ชื่อ: ${escapeHtml(s.displayName)} (@${escapeHtml(s.username)})<br>
+              เบอร์: ${escapeHtml(s.phone || '-')}<br>
+              อีเมล: ${escapeHtml(s.email || '-')}
+            </div>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <strong>สินค้า:</strong> ${escapeHtml(o.listingTitle)}<br>
+            <strong>ยอดค่าสินค้า:</strong> ฿${formatNumber(o.itemPrice)}<br>
+            <strong>ค่าจัดส่ง:</strong> ฿${formatNumber(o.shippingFee)}<br>
+            <strong>ยอดชำระสุทธิ:</strong> <span style="font-size: 16px; font-weight: 700; color: var(--color-primary);">฿${formatNumber(p.amount)}</span> (วิธี: ${methodLabel})<br>
+            <strong>สถานะปัจจุบัน:</strong> <span class="badge">${p.status}</span>
+          </div>
+
+          ${slipHtml}
+        `;
+        // สลิปเปิดผ่าน API ที่ตรวจสิทธิ์ (ต้องแนบ token) จึงโหลดเป็น Blob
+        if (p.slipUrl) {
+          try {
+            const url = URL.createObjectURL(await api.blob(p.slipUrl.replace(/^\/api/, '')));
+            document.getElementById('modal-slip-img').src = url;
+            body.querySelectorAll('.slip-link').forEach((a) => { a.href = url; });
+          } catch (e) {
+            document.getElementById('modal-slip-img').alt = e.message;
+          }
+        }
+      } catch (err) {
+        body.innerHTML = `<span class="field-error">${escapeHtml(err.message)}</span>`;
+      }
+    }
+
+    document.getElementById('btn-close-detail').addEventListener('click', () => {
+      document.getElementById('detail-modal').classList.add('hidden');
+    });
+
+    // อนุมัติการชำระเงิน
+    document.getElementById('btn-approve-pay').addEventListener('click', async () => {
+      if (!currentPaymentId) return;
+      if (!confirm('ยืนยันอนุมัติการชำระเงินรายการนี้? ยอดเงินจะถูกนำเข้า Escrow และคำสั่งซื้อจะเปลี่ยนเป็นรอการจัดส่ง')) return;
+
+      const btn = document.getElementById('btn-approve-pay');
+      btn.disabled = true;
+
+      try {
+        await api.post(`/admin/payments/${currentPaymentId}/approve`);
+        alert('อนุมัติการชำระเงินสำเร็จ เงินเข้าสู่ระบบ Escrow แล้ว');
+        document.getElementById('detail-modal').classList.add('hidden');
+        loadPayments(currentPage);
+      } catch (err) {
+        alert(err.message || 'อนุมัติไม่สำเร็จ');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ปฏิเสธการชำระเงิน
+    document.getElementById('btn-reject-pay').addEventListener('click', async () => {
+      if (!currentPaymentId) return;
+      const reason = prompt('กรุณาระบุเหตุผลการปฏิเสธการชำระเงิน (ระบบจะคืนเงินเข้า Wallet ของผู้ซื้อทันที):');
+      if (reason === null) return;
+      if (!reason.trim()) {
+        alert('จำเป็นต้องระบุเหตุผลในการปฏิเสธ');
+        return;
+      }
+
+      const btn = document.getElementById('btn-reject-pay');
+      btn.disabled = true;
+
+      try {
+        await api.post(`/admin/payments/${currentPaymentId}/reject`, { reason: reason.trim() });
+        alert('ปฏิเสธการชำระเงินเรียบร้อย ระบบได้คืนเงินเข้า Wallet ของผู้ซื้อแล้ว');
+        document.getElementById('detail-modal').classList.add('hidden');
+        loadPayments(currentPage);
+      } catch (err) {
+        alert(err.message || 'ปฏิเสธไม่สำเร็จ');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('status-filter').addEventListener('change', () => loadPayments(1));
+
+    document.getElementById('btn-prev').addEventListener('click', () => {
+      if (currentPage > 1) loadPayments(currentPage - 1);
+    });
+
+    document.getElementById('btn-next').addEventListener('click', () => {
+      loadPayments(currentPage + 1);
+    });
+
+    function checkUserAndLoad(user) {
+      if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+        location.href = '/pages/login.html';
+        return;
+      }
+      loadPayments(1);
+    }
+
+    document.addEventListener('user:ready', (e) => {
+      checkUserAndLoad(e.detail);
+    });
+
+    if (window.currentUser) {
+      checkUserAndLoad(window.currentUser);
+    }
+  </script>
+</body>
+</html>

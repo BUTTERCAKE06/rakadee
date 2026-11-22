@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ชำระเงิน - RAKADEE</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .pay-container { max-width: 800px; margin: 32px auto; }
+    .pay-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    
+    .item-card {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      padding: 16px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-surface);
+    }
+    .item-img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: var(--radius);
+      background: var(--color-bg);
+      flex-shrink: 0;
+    }
+    .item-info { flex: 1; min-width: 0; }
+    .item-title { font-weight: 600; font-size: 16px; color: var(--color-text); margin-bottom: 6px; }
+
+    .price-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .price-table td { padding: 8px 0; border-bottom: 1px dashed var(--color-border); }
+    .price-table tr:last-child td { border-bottom: none; font-size: 18px; font-weight: 700; color: var(--color-primary); padding-top: 12px; }
+
+    .timer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .timer-active { background: #fef3c7; color: var(--color-warning); }
+    .timer-paused { background: #eff6ff; color: var(--color-primary); }
+    .timer-expired { background: #fee2e2; color: var(--color-danger); }
+    .timer-done { background: #dcfce7; color: var(--color-success); }
+
+    .wallet-box {
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      background: var(--color-bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center; z-index: 1000;
+    }
+    .modal-card {
+      background: #fff; border-radius: calc(var(--radius) * 1.5); padding: 24px;
+      max-width: 480px; width: 90%; max-height: 85vh; overflow-y: auto;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container pay-container">
+    <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h1 style="margin: 0; font-size: 24px; color: var(--color-text);">ชำระเงินค่าสินค้า</h1>
+        <p class="muted" style="margin: 4px 0 0; font-size: 14px;" id="order-subtitle">คำสั่งซื้อ</p>
+      </div>
+      <div id="timer-slot"></div>
+    </div>
+
+    <div id="alert-box" class="alert hidden"></div>
+
+    <div class="pay-grid" id="main-content">
+      <!-- ข้อมูลสินค้าและราคา -->
+      <div class="card">
+        <h2 style="font-size: 16px; margin: 0 0 16px;">สรุปรายการสินค้า</h2>
+        <div class="item-card">
+          <img class="item-img" id="item-cover" alt="รูปสินค้า">
+          <div class="item-info">
+            <div class="item-title" id="item-title">กำลังโหลด...</div>
+            <span class="badge" id="closing-type-badge">ประมูล</span>
+          </div>
+        </div>
+
+        <table class="price-table">
+          <tr>
+            <td class="muted">ราคาปิดประมูล / ราคาสินค้า</td>
+            <td style="text-align: right;" id="price-item">฿0.00</td>
+          </tr>
+          <tr>
+            <td class="muted">ค่าจัดส่ง</td>
+            <td style="text-align: right;" id="price-shipping">฿0.00</td>
+          </tr>
+          <tr>
+            <td>ยอดชำระสุทธิ</td>
+            <td style="text-align: right;" id="price-total">฿0.00</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- ที่อยู่จัดส่ง -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h2 style="font-size: 16px; margin: 0;">ที่อยู่สำหรับจัดส่งสินค้า</h2>
+          <button type="button" class="btn" id="btn-change-addr" style="font-size: 13px; padding: 4px 10px;">เปลี่ยนที่อยู่</button>
+        </div>
+        <div id="addr-display" style="font-size: 14px; line-height: 1.6; color: var(--color-text);">
+          <span class="muted">กำลังตรวจสอบที่อยู่...</span>
+        </div>
+      </div>
+
+      <!-- วิธีการชำระเงิน (Wallet) -->
+      <div class="card" id="wallet-pay-card">
+        <h2 style="font-size: 16px; margin: 0 0 16px;">วิธีการชำระเงิน</h2>
+        
+        <div class="wallet-box">
+          <div>
+            <div style="font-size: 13px; color: var(--color-muted);">กระเป๋าเงิน (Wallet) ของคุณ</div>
+            <div style="font-size: 24px; font-weight: 700; color: var(--color-text); margin-top: 2px;">
+              ฿<span id="wallet-balance">0.00</span>
+            </div>
+          </div>
+          <div>
+            <a href="/pages/wallet.html" target="_blank" class="btn" style="font-size: 13px;">ดูกระเป๋าเงิน</a>
+          </div>
+        </div>
+
+        <div id="balance-status-box" style="margin-top: 14px;"></div>
+
+        <!-- แนบสลิปการโอนเงิน (บังคับแนบสลิป, เลขอ้างอิงไม่บังคับ) -->
+        <div id="pay-slip-section" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--color-border);">
+          <h3 style="font-size: 15px; margin: 0 0 12px;">แนบสลิปการโอนเงิน</h3>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label for="pay-slip-file" style="font-weight: 600; font-size: 13.5px;">ไฟล์รูปภาพสลิป (JPG, PNG) <span style="color: var(--color-danger);">* บังคับ</span></label>
+            <input type="file" id="pay-slip-file" accept="image/jpeg,image/png" style="margin-top: 6px; width: 100%;">
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label for="pay-slip-ref" style="font-size: 13px; color: var(--color-muted);">เลขอ้างอิงสลิป (ไม่บังคับ)</label>
+            <input type="text" id="pay-slip-ref" placeholder="เช่น 202611210001" style="margin-top: 4px; width: 100%;">
+          </div>
+          <div id="pay-slip-thumb-box" class="hidden" style="margin-top: 10px;">
+            <div style="font-size: 12.5px; color: var(--color-muted); margin-bottom: 4px;">ตัวอย่างสลิปที่เลือก:</div>
+            <img id="pay-slip-thumb" alt="ตัวอย่างสลิป" style="max-height: 180px; border-radius: var(--radius); border: 1px solid var(--color-border); display: block;">
+          </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <button type="button" class="btn btn-primary" id="btn-submit-pay" style="width: 100%; padding: 12px; font-size: 16px; font-weight: 600;">
+            ยืนยันการชำระเงิน
+          </button>
+        </div>
+      </div>
+
+      <!-- สลิปการโอนเงิน (แสดงเมื่อมี payment pending_review) -->
+      <div class="card hidden" id="slip-card">
+        <h2 style="font-size: 16px; margin: 0 0 12px;">หลักฐานสลิปการโอนเงิน</h2>
+        <p class="muted" style="font-size: 13px; margin: 0 0 16px;">
+          คุณสามารถตรวจสอบสลิปที่ส่งแล้ว หรือเลือกอัปโหลดสลิปใหม่เพื่อให้แอดมินตรวจสอบได้
+        </p>
+
+        <form id="slip-form" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="slip-file">อัปโหลดสลิปใหม่ (JPG, PNG) <span style="color: var(--color-danger);">*</span></label>
+            <input type="file" id="slip-file" name="slip" accept="image/jpeg,image/png" required>
+          </div>
+          <div class="form-group">
+            <label for="slip-ref">เลขอ้างอิงสลิป (ไม่บังคับ)</label>
+            <input type="text" id="slip-ref" name="slipReference" placeholder="เช่น 202611210001">
+          </div>
+          <button type="submit" class="btn" id="btn-upload-slip">บันทึกสลิปใหม่</button>
+        </form>
+
+        <div id="slip-preview-box" class="hidden" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--color-border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 13.5px; font-weight: 600;">สลิปที่แนบไว้:</span>
+            <a id="slip-open-btn" href="" target="_blank" rel="noopener noreferrer" class="btn" style="font-size: 12px; padding: 3px 8px; text-decoration: none;">🔍 เปิดดูรูปขนาดเต็ม</a>
+          </div>
+          <a id="slip-link" href="" target="_blank" rel="noopener noreferrer" style="display: inline-block;">
+            <img id="slip-img" alt="สลิปการโอนเงิน" style="max-width: 240px; border-radius: var(--radius); border: 1px solid var(--color-border); cursor: zoom-in;" title="คลิกเพื่อดูรูปสลิปขนาดเต็ม">
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal เลือกที่อยู่จัดส่ง -->
+    <div class="modal-overlay hidden" id="addr-modal">
+      <div class="modal-card">
+        <h3 style="margin-top: 0; font-size: 18px;">เลือกที่อยู่จัดส่ง</h3>
+        <div id="addr-modal-list" style="display: flex; flex-direction: column; gap: 10px; margin: 16px 0;"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn" id="btn-close-modal">ปิด</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = Number(urlParams.get('orderId') || urlParams.get('id'));
+
+    let orderData = null;
+    let timerInterval = null;
+
+    function formatNumber(num) {
+      return Number(num || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function showAlert(msg, isError = true) {
+      const box = document.getElementById('alert-box');
+      box.textContent = msg;
+      box.className = isError ? 'alert alert-error' : 'alert alert-success';
+      box.classList.remove('hidden');
+    }
+
+    function renderTimer(remainingSec, isPaused = false) {
+      const slot = document.getElementById('timer-slot');
+      if (isPaused) {
+        slot.innerHTML = `<span class="timer-badge timer-paused">⏸️ รอแอดมินตรวจ (หยุดนับเวลา)</span>`;
+        return;
+      }
+      if (remainingSec == null || remainingSec <= 0) {
+        slot.innerHTML = `<span class="timer-badge timer-expired">⏰ หมดเวลาชำระเงิน</span>`;
+        return;
+      }
+
+      function update() {
+        if (remainingSec <= 0) {
+          slot.innerHTML = `<span class="timer-badge timer-expired">⏰ หมดเวลาชำระเงิน</span>`;
+          clearInterval(timerInterval);
+          return;
+        }
+        const hours = Math.floor(remainingSec / 3600);
+        const mins = Math.floor((remainingSec % 3600) / 60);
+        const secs = remainingSec % 60;
+        const timeStr = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        slot.innerHTML = `<span class="timer-badge timer-active">⏱️ เหลือเวลาชำระ: ${timeStr}</span>`;
+        remainingSec--;
+      }
+
+      clearInterval(timerInterval);
+      update();
+      timerInterval = setInterval(update, 1000);
+    }
+
+    async function loadPaymentDetails() {
+      if (!orderId) {
+        showAlert('ไม่พบหมายเลขคำสั่งซื้อใน URL');
+        document.getElementById('main-content').classList.add('hidden');
+        return;
+      }
+
+      try {
+        const data = await api.get(`/orders/${orderId}/payment`);
+        orderData = data;
+
+        document.getElementById('order-subtitle').textContent = `คำสั่งซื้อ #ORD-${data.orderId}`;
+        document.getElementById('item-title').textContent = data.listing.title;
+        const cover = document.getElementById('item-cover');
+        if (data.listing.coverUrl) cover.src = data.listing.coverUrl;
+        else cover.removeAttribute('src');
+        document.getElementById('closing-type-badge').textContent = data.mode === 'buy_now' ? 'ซื้อทันที (Buy Now)' : 'ชนะการประมูล';
+
+        document.getElementById('price-item').textContent = `฿${formatNumber(data.itemPrice)}`;
+        document.getElementById('price-shipping').textContent = `฿${formatNumber(data.shippingFee)}`;
+        document.getElementById('price-total').textContent = `฿${formatNumber(data.totalAmount)}`;
+
+        document.getElementById('wallet-balance').textContent = formatNumber(data.walletBalance);
+
+        // แสดงที่อยู่จัดส่ง
+        renderShippingAddress(data.shippingAddress);
+
+        // เช็คสถานะ Payment ล่าสุด
+        const lp = data.latestPayment;
+        const balanceBox = document.getElementById('balance-status-box');
+        const btnPay = document.getElementById('btn-submit-pay');
+        const slipCard = document.getElementById('slip-card');
+        const btnChangeAddr = document.getElementById('btn-change-addr');
+
+        if (lp && lp.status === 'pending_review') {
+          // กำลังรอตรวจ
+          renderTimer(null, true);
+          balanceBox.innerHTML = `
+            <div class="alert alert-success" style="margin: 0;">
+              ✓ หักเงินจาก Wallet เรียบร้อยแล้ว ขณะนี้คำสั่งซื้ออยู่ระหว่าง <strong>รอแอดมินตรวจสอบการชำระเงิน</strong> (ภายใน 24 ชม.)
+            </div>
+          `;
+          btnPay.classList.add('hidden');
+          btnChangeAddr.classList.add('hidden');
+          slipCard.classList.remove('hidden');
+
+          if (lp.slipUrl) showSlip(lp.slipUrl);
+        } else if (lp && lp.status === 'success') {
+          // อนุมัติแล้ว (ไม่ต้องนับเวลา)
+          clearInterval(timerInterval);
+          document.getElementById('timer-slot').innerHTML = '<span class="timer-badge timer-done">✓ ชำระเงินแล้ว</span>';
+          balanceBox.innerHTML = `
+            <div class="alert alert-success" style="margin: 0;">
+              ✓ ชำระเงินสำเร็จแล้ว เงินเข้าสู่ระบบ Escrow และคำสั่งซื้อพร้อมสำหรับการจัดส่ง
+            </div>
+          `;
+          btnPay.classList.add('hidden');
+          btnChangeAddr.classList.add('hidden');
+        } else {
+          // ยังไม่ได้ชำระ หรือเคยถูก reject
+          renderTimer(data.remainingSec, false);
+
+          if (lp && lp.status === 'rejected') {
+            showAlert(`การชำระเงินก่อนหน้าถูกปฏิเสธ: ${lp.rejectReason || '-'} (ระบบได้คืนเงินเข้า Wallet แล้วและขยายเวลาให้คุณชำระใหม่)`);
+          }
+
+          if (data.shortfall > 0) {
+            balanceBox.innerHTML = `
+              <div class="alert alert-error" style="margin: 0;">
+                ⚠️ ยอดเงินใน Wallet ไม่เพียงพอ (ขาดอีก ฿${formatNumber(data.shortfall)})
+              </div>
+            `;
+            btnPay.disabled = true;
+          } else {
+            balanceBox.innerHTML = `
+              <div style="font-size: 13.5px; color: var(--color-success); font-weight: 500;">
+                ✓ ยอดเงินใน Wallet เพียงพอสำหรับการชำระ
+              </div>
+            `;
+            btnPay.disabled = false;
+          }
+        }
+      } catch (err) {
+        showAlert(err.message || 'ไม่สามารถโหลดข้อมูลการชำระเงินได้');
+        document.getElementById('main-content').classList.add('hidden');
+      }
+    }
+
+    function renderShippingAddress(addr) {
+      const el = document.getElementById('addr-display');
+      if (!addr || !addr.recipientName || !addr.addressLine) {
+        el.innerHTML = '<span class="field-error">ยังไม่ได้ระบุที่อยู่จัดส่ง กรุณากดปุ่ม "เปลี่ยนที่อยู่" ด้านบน</span>';
+        return;
+      }
+      el.innerHTML = `
+        <strong>${escapeHtml(addr.recipientName)}</strong> (${escapeHtml(addr.phone || '-')})<br>
+        ${escapeHtml(addr.addressLine)} ต.${escapeHtml(addr.subDistrict || '-')} อ.${escapeHtml(addr.district || '-')} จ.${escapeHtml(addr.province || '-')} ${escapeHtml(addr.postalCode || '')}
+      `;
+    }
+
+    // ตัวอย่างสลิปเมื่อเลือกไฟล์
+    document.getElementById('pay-slip-file').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      const thumbBox = document.getElementById('pay-slip-thumb-box');
+      const thumbImg = document.getElementById('pay-slip-thumb');
+      if (file) {
+        thumbImg.src = URL.createObjectURL(file);
+        thumbBox.classList.remove('hidden');
+      } else {
+        thumbBox.classList.add('hidden');
+      }
+    });
+
+    // สลิปเปิดผ่าน API ที่ต้องแนบ token จึงโหลดเป็น Blob แล้วแสดง (เปิดลิงก์ตรงไม่ได้)
+    async function showSlip(apiUrl) {
+      try {
+        const url = URL.createObjectURL(await api.blob(apiUrl.replace(/^\/api/, '')));
+        document.getElementById('slip-preview-box').classList.remove('hidden');
+        document.getElementById('slip-img').src = url;
+        document.getElementById('slip-link').href = url;
+        document.getElementById('slip-open-btn').href = url;
+      } catch (err) {
+        showAlert(err.message || 'เปิดรูปสลิปไม่ได้');
+      }
+    }
+
+    // กดชำระเงินด้วย Wallet พร้อมสลิป
+    document.getElementById('btn-submit-pay').addEventListener('click', async () => {
+      const fileInput = document.getElementById('pay-slip-file');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('กรุณาแนบรูปภาพสลิปการโอนเงิน');
+        fileInput.focus();
+        return;
+      }
+
+      if (!confirm(`ยืนยันการชำระเงินจำนวน ฿${formatNumber(orderData.totalAmount)} จาก Wallet ของคุณ?`)) return;
+
+      const btn = document.getElementById('btn-submit-pay');
+      btn.disabled = true;
+      btn.textContent = 'กำลังดำเนินการ...';
+
+      try {
+        // ชำระและแนบสลิปในคำขอเดียว (สลิปบังคับ) ถ้าไม่สำเร็จจะไม่ถูกหักเงิน
+        const fd = new FormData();
+        fd.append('slip', fileInput.files[0]);
+        const ref = document.getElementById('pay-slip-ref').value.trim();
+        if (ref) fd.append('slipReference', ref);
+
+        await api.upload(`/orders/${orderId}/pay`, fd);
+
+        showAlert('ชำระเงินและแนบสลิปเรียบร้อยแล้ว ขณะนี้อยู่ระหว่างรอแอดมินตรวจสอบ', false);
+        loadPaymentDetails();
+      } catch (err) {
+        showAlert(err.message || 'ชำระเงินไม่สำเร็จ');
+        btn.disabled = false;
+        btn.textContent = 'ยืนยันการชำระเงิน';
+      }
+    });
+
+    // แนบ/อัปเดตสลิป
+    document.getElementById('slip-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('slip-file');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('กรุณาเลือกไฟล์สลิป');
+        return;
+      }
+
+      if (!orderData || !orderData.latestPayment) {
+        alert('ไม่พบรายการชำระเงิน');
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append('slip', fileInput.files[0]);
+      const ref = document.getElementById('slip-ref').value.trim();
+      if (ref) fd.append('slipReference', ref);
+
+      const btn = document.getElementById('btn-upload-slip');
+      btn.disabled = true;
+      btn.textContent = 'กำลังอัปโหลด...';
+
+      try {
+        const res = await api.upload(`/payments/${orderData.latestPayment.id}/slip`, fd);
+        alert('อัปเดตสลิปเรียบร้อยแล้ว');
+        showSlip(res.slipUrl);
+      } catch (err) {
+        alert(err.message || 'อัปโหลดสลิปไม่สำเร็จ');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'บันทึกสลิปใหม่';
+      }
+    });
+
+    // เปลี่ยนที่อยู่จัดส่ง
+    document.getElementById('btn-change-addr').addEventListener('click', async () => {
+      const modal = document.getElementById('addr-modal');
+      const list = document.getElementById('addr-modal-list');
+      list.innerHTML = 'กำลังโหลดที่อยู่ของคุณ...';
+      modal.classList.remove('hidden');
+
+      try {
+        const addrs = await api.get('/users/me/addresses');
+        const items = Array.isArray(addrs) ? addrs : addrs.items || [];
+        if (items.length === 0) {
+          list.innerHTML = 'ไม่พบที่อยู่ในสมุดที่อยู่ของคุณ <a href="/pages/settings.html#addresses" target="_blank">เพิ่มที่อยู่ใหม่</a>';
+          return;
+        }
+
+        list.innerHTML = '';
+        items.forEach((a) => {
+          const item = document.createElement('div');
+          item.className = 'card';
+          item.style.padding = '12px';
+          item.style.cursor = 'pointer';
+          item.innerHTML = `
+            <strong>${escapeHtml(a.recipientName)}</strong> (${escapeHtml(a.phone)})<br>
+            <small class="muted">${escapeHtml(a.addressLine)} ${escapeHtml(a.province)} ${escapeHtml(a.postalCode)}</small>
+          `;
+          item.addEventListener('click', async () => {
+            try {
+              const updated = await api.put(`/orders/${orderId}/shipping-address`, { addressId: a.id });
+              renderShippingAddress(updated.shippingAddress);
+              modal.classList.add('hidden');
+              showAlert('เปลี่ยนที่อยู่จัดส่งสำเร็จ', false);
+            } catch (err) {
+              alert(err.message || 'เปลี่ยนที่อยู่ไม่สำเร็จ');
+            }
+          });
+          list.appendChild(item);
+        });
+      } catch (err) {
+        list.innerHTML = `<span class="field-error">${escapeHtml(err.message)}</span>`;
+      }
+    });
+
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      document.getElementById('addr-modal').classList.add('hidden');
+    });
+
+    // เริ่มต้นทำงาน
+    document.addEventListener('user:ready', (e) => {
+      if (!e.detail) {
+        location.href = `/pages/login.html?next=${encodeURIComponent(location.pathname + location.search)}`;
+        return;
+      }
+      loadPaymentDetails();
+    });
+  </script>
+</body>
+</html>

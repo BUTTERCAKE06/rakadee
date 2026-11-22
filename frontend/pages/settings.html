@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ตั้งค่า | Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .avatar-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .avatar.lg { width: 72px; height: 72px; font-size: 28px; }
+    .addr-list { display: grid; gap: 12px; margin-bottom: 16px; }
+    .addr-card { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .addr-card .who { font-weight: 600; }
+    .addr-card .badge { margin-left: 6px; }
+    .notif-group { display: grid; grid-template-columns: 1fr auto auto; gap: 8px 24px; align-items: center;
+      padding: 14px 0; border-top: 1px solid var(--color-border); }
+    .notif-group:first-of-type { border-top: 0; }
+    .notif-group label { font-weight: 400; display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+    .table-wrap { overflow-x: auto; }
+    .public-preview { display: flex; gap: 16px; align-items: flex-start; padding: 16px; border: 1px dashed var(--color-border);
+      border-radius: var(--radius); background: var(--color-bg); }
+    .public-preview .info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .public-preview .name { font-size: 18px; font-weight: 700; }
+    .public-preview .badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .public-preview .bio { margin: 4px 0 0; white-space: pre-line; overflow-wrap: anywhere; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body data-admin-shell>
+  <div id="navbar"></div>
+
+  <main class="container account-layout">
+    <aside class="account-nav" id="account-nav"></aside>
+
+    <section>
+      <h1 class="page-title">ตั้งค่า</h1>
+      <div class="tabs" role="tablist" id="tabs">
+        <button type="button" role="tab" data-tab="profile" aria-selected="true">โปรไฟล์</button>
+        <button type="button" role="tab" data-tab="security" aria-selected="false">ความปลอดภัย</button>
+        <button type="button" role="tab" data-tab="addresses" aria-selected="false" data-member>ที่อยู่จัดส่ง</button>
+        <button type="button" role="tab" data-tab="notifications" aria-selected="false" data-member>การแจ้งเตือน</button>
+      </div>
+      <div id="alert" aria-live="polite"></div>
+
+      <!-- โปรไฟล์ (api-spec 2.1–2.3) -->
+      <div class="tab-panel" id="tab-profile">
+        <div class="card section">
+          <h2>ข้อมูลส่วนตัว</h2>
+          <div class="avatar-row">
+            <span class="avatar lg" id="avatar-preview"></span>
+            <div class="row-actions">
+              <label class="btn" for="avatar-input">เปลี่ยนรูป</label>
+              <input type="file" id="avatar-input" accept="image/jpeg,image/png" hidden>
+              <button type="button" class="btn" id="avatar-remove">ลบรูป</button>
+              <span class="hint">jpg, png ไม่เกิน 5MB</span>
+            </div>
+          </div>
+          <form id="profile-form" novalidate>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="displayName">ชื่อที่แสดง</label>
+                <input id="displayName" name="displayName" maxlength="50" required>
+                <span class="hint">ผู้ใช้อื่นมองเห็นชื่อนี้</span>
+                <span class="field-error" data-error="displayName"></span>
+              </div>
+              <div class="form-group">
+                <label for="username">ชื่อผู้ใช้ (Username)</label>
+                <input id="username" disabled>
+              </div>
+              <div class="form-group">
+                <label for="email">อีเมล</label>
+                <input id="email" disabled>
+                <span class="hint" id="email-status"></span>
+              </div>
+              <div class="form-group">
+                <label for="phone">เบอร์โทรศัพท์</label>
+                <input id="phone" disabled>
+                <span class="hint" id="phone-status"></span>
+              </div>
+              <div class="form-group">
+                <label for="idcard">เลขบัตรประชาชน</label>
+                <input id="idcard" disabled>
+                <span class="hint">แสดงเฉพาะ 4 ตัวท้าย</span>
+              </div>
+              <div class="form-group full">
+                <label for="bio">คำแนะนำตัว <span class="hint">(ไม่บังคับ)</span></label>
+                <textarea id="bio" name="bio" rows="3" maxlength="500"></textarea>
+                <span class="field-error" data-error="bio"></span>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">บันทึกการเปลี่ยนแปลง</button>
+          </form>
+        </div>
+
+        <!-- ตัวอย่างข้อมูลสาธารณะ (api-spec 2.11) ผู้ใช้อื่นเห็นเท่านี้ -->
+        <div class="card section" id="public-card" data-member-block hidden>
+          <h2>ตัวอย่างข้อมูลสาธารณะ</h2>
+          <p class="hint">ผู้ใช้อื่นเห็นข้อมูลของคุณแบบนี้ (ไม่แสดงอีเมล เบอร์โทร และเลขบัตร)</p>
+          <div class="public-preview" id="public-preview"></div>
+        </div>
+      </div>
+
+      <!-- ความปลอดภัย (api-spec 1.12–1.14 ) -->
+      <div class="tab-panel" id="tab-security" hidden>
+        <div class="card section">
+          <h2>เปลี่ยนรหัสผ่าน</h2>
+          <form id="password-form" novalidate>
+            <div class="form-grid">
+              <div class="form-group full">
+                <label for="currentPassword">รหัสผ่านเดิม</label>
+                <input type="password" id="currentPassword" name="currentPassword" autocomplete="current-password" required>
+                <span class="field-error" data-error="currentPassword"></span>
+              </div>
+              <div class="form-group">
+                <label for="newPassword">รหัสผ่านใหม่</label>
+                <input type="password" id="newPassword" name="newPassword" autocomplete="new-password" required>
+                <span class="hint">อย่างน้อย 8 ตัว มีพิมพ์ใหญ่ พิมพ์เล็ก และตัวเลข</span>
+                <span class="field-error" data-error="newPassword"></span>
+              </div>
+              <div class="form-group">
+                <label for="confirmPassword">ยืนยันรหัสผ่านใหม่</label>
+                <input type="password" id="confirmPassword" autocomplete="new-password" required>
+                <span class="field-error" data-error="confirmPassword"></span>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">เปลี่ยนรหัสผ่าน</button>
+          </form>
+        </div>
+        <div class="card section">
+          <h2>อุปกรณ์ที่เคยเข้าสู่ระบบ</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>อุปกรณ์</th><th>IP</th><th>ใช้งานล่าสุด</th><th></th></tr></thead>
+              <tbody id="sessions"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ที่อยู่จัดส่ง (api-spec 2.4–2.8) -->
+      <div class="tab-panel" id="tab-addresses" hidden>
+        <div class="card section">
+          <h2>สมุดที่อยู่</h2>
+          <div class="addr-list" id="addr-list"></div>
+          <button type="button" class="btn" id="addr-add">+ เพิ่มที่อยู่</button>
+        </div>
+        <div class="card section" id="addr-form-card" hidden>
+          <h2 id="addr-form-title">เพิ่มที่อยู่ใหม่</h2>
+          <form id="addr-form" novalidate>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="recipientName">ชื่อผู้รับ</label>
+                <input id="recipientName" name="recipientName" maxlength="150" required>
+                <span class="field-error" data-error="recipientName"></span>
+              </div>
+              <div class="form-group">
+                <label for="addrPhone">เบอร์โทรศัพท์ผู้รับ</label>
+                <input id="addrPhone" name="phone" inputmode="numeric" maxlength="12" placeholder="0812345678" required>
+                <span class="field-error" data-error="phone"></span>
+              </div>
+              <div class="form-group full">
+                <label for="addressLine">บ้านเลขที่ อาคาร / หมู่บ้าน ซอย ถนน</label>
+                <input id="addressLine" name="addressLine" maxlength="255" required>
+                <span class="field-error" data-error="addressLine"></span>
+              </div>
+              <div class="form-group">
+                <label for="subDistrict">ตำบล / แขวง</label>
+                <input id="subDistrict" name="subDistrict" maxlength="100" required>
+                <span class="field-error" data-error="subDistrict"></span>
+              </div>
+              <div class="form-group">
+                <label for="district">อำเภอ / เขต</label>
+                <input id="district" name="district" maxlength="100" required>
+                <span class="field-error" data-error="district"></span>
+              </div>
+              <div class="form-group">
+                <label for="province">จังหวัด</label>
+                <input id="province" name="province" maxlength="100" required>
+                <span class="field-error" data-error="province"></span>
+              </div>
+              <div class="form-group">
+                <label for="postalCode">รหัสไปรษณีย์</label>
+                <input id="postalCode" name="postalCode" inputmode="numeric" maxlength="5" required>
+                <span class="field-error" data-error="postalCode"></span>
+              </div>
+            </div>
+            <div class="row-actions">
+              <button type="submit" class="btn btn-primary">บันทึกที่อยู่</button>
+              <button type="button" class="btn" id="addr-cancel">ยกเลิก</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ตั้งค่าแจ้งเตือน (api-spec 2.9–2.10) -->
+      <div class="tab-panel" id="tab-notifications" hidden>
+        <div class="card section">
+          <h2>ตั้งค่าการแจ้งเตือน</h2>
+          <form id="notif-form">
+            <div id="notif-groups"></div>
+            <button type="submit" class="btn btn-primary">บันทึกการตั้งค่า</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/account-nav.js"></script>
+  <script src="/js/settings.js"></script>
+</body>
+</html>

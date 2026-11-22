@@ -3,22 +3,47 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rakadee - ประมูลสินค้าออนไลน์</title>
+  <title>RAKADEE - ประมูลสินค้าออนไลน์</title>
   <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/auction.css">
 </head>
 <body>
   <div id="navbar"></div>
 
-  <main class="container">
-    <h1>ประมูลสินค้าออนไลน์</h1>
-    <p class="muted">หน้าแรก (Programmer): รายการใกล้จบและใหม่ล่าสุดจะแสดงที่นี่</p>
-    <div class="card">
-      <strong>สถานะระบบ:</strong> <span id="health">กำลังตรวจสอบ...</span>
-    </div>
+  <main class="container au-page">
+    <section class="au-hero" aria-label="แนะนำ">
+      <div>
+        <h1>ประมูลของสะสมอนิเมะสุดแสนจะแรร์ ปลอดภัย โปร่งใส มีเงินพักกลาง</h1>
+        <p>สมัครฟรี รับเครดิตทดลอง 10,000 บาท เริ่มประมูลได้ทันที</p>
+        <a class="btn btn-light" href="/pages/search.html">เริ่มประมูลเลย</a>
+        <a class="btn btn-light" href="/pages/help.html">วิธีการประมูล</a>
+      </div>
+      <div class="au-hero-art" aria-hidden="true"></div>
+    </section>
+
+    <div class="au-section-head"><h2>หมวดหมู่</h2></div>
+    <div class="au-cats" id="cats"></div>
+
+    <div class="au-section-head"><h2>ใกล้จบการประมูล</h2><a href="/pages/search.html?sort=ending_soon">ดูทั้งหมด →</a></div>
+    <div class="au-grid" id="ending"></div>
+
+    <div class="au-section-head"><h2>มาใหม่ล่าสุด</h2><a href="/pages/search.html?sort=newest">ดูทั้งหมด →</a></div>
+    <div class="au-grid" id="newest"></div>
   </main>
+
+  <footer class="au-footer">
+    <div class="container">
+      <div>RAKADEE — แพลตฟอร์มประมูลสินค้าออนไลน์ มีระบบพักเงินกลาง (Escrow) ปลอดภัยทั้งผู้ซื้อและผู้ขาย</div>
+      <div><a href="/pages/terms.html">เงื่อนไขการให้บริการ</a> · <a href="/pages/terms.html#privacy">นโยบายความเป็นส่วนตัว (PDPA)</a> · <a href="/pages/help.html">ช่วยเหลือ</a> · © 2026 RAKADEE</div>
+      <!-- สถานะระบบจากหน้าเดิมของ PM (README อ้างถึง) -->
+      <div>สถานะระบบ: <span id="health">กำลังตรวจสอบ...</span></div>
+    </div>
+  </footer>
 
   <script src="/js/api.js"></script>
   <script src="/js/layout.js"></script>
+  <script src="/js/auction-common.js"></script>
+  <script src="/js/home.js"></script>
   <script>
     api.get('/health')
       .then((d) => { document.getElementById('health').textContent = `API ${d.status}, Database ${d.database}`; })

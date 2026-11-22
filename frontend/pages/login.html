@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>เข้าสู่ระบบ - Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    /* ปรับแต่งตามธีมกลาง css/main.css */
+    .auth-container { max-width: 440px; margin: 48px auto; }
+    
+    .card-figma {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: calc(var(--radius) * 2);
+      padding: 32px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    
+    .logo-badge {
+      width: 40px;
+      height: 40px;
+      background: var(--color-primary-dark);
+      border-radius: var(--radius);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-surface);
+      font-weight: 700;
+      font-size: 22px;
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 6px;
+    }
+
+    .input-figma {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      font-size: 15px;
+      color: var(--color-text);
+      outline: none;
+      transition: all 0.15s ease;
+      background: var(--color-surface);
+      box-sizing: border-box;
+    }
+    .input-figma:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+    }
+    .input-figma.error {
+      border-color: var(--color-danger);
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+    }
+
+    .btn-figma-primary {
+      width: 100%;
+      height: 44px;
+      background: var(--color-primary);
+      color: var(--color-surface);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-figma-primary:hover:not(:disabled) {
+      background: var(--color-primary-dark);
+    }
+    .btn-figma-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container">
+    <div class="auth-container">
+      <div class="card-figma">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <div class="logo-badge">R</div>
+          <h2 style="margin: 0; font-size: 24px; color: var(--color-text);">เข้าสู่ระบบ</h2>
+          <p class="muted" style="margin: 6px 0 0; font-size: 14px;">เข้าสู่ระบบ Rakadee เพื่อร่วมประมูลหรือจัดการสินค้า</p>
+        </div>
+
+        <div id="alert-box" class="alert hidden"></div>
+
+        <form id="login-form">
+          <div class="form-group">
+            <label for="identifier">อีเมล หรือ ชื่อผู้ใช้</label>
+            <input type="text" id="identifier" class="input-figma" required placeholder="เช่น somchai123 หรือ somchai@example.com">
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+              <label for="password" style="margin-bottom: 0;">รหัสผ่าน</label>
+              <a href="/pages/forgot-password.html" style="font-size: 13px; color: var(--color-primary);">ลืมรหัสผ่าน?</a>
+            </div>
+            <input type="password" id="password" class="input-figma" required placeholder="รหัสผ่านของคุณ">
+          </div>
+
+          <div style="margin-top: 24px;">
+            <button type="submit" class="btn-figma-primary" id="btn-login">
+              เข้าสู่ระบบ
+            </button>
+          </div>
+        </form>
+
+        <div style="margin-top: 24px; text-align: center; font-size: 14px; color: var(--color-muted); border-top: 1px solid var(--color-border); padding-top: 16px;">
+          ยังไม่มีบัญชีสมาชิก? <a href="/pages/register.html" style="color: var(--color-primary); font-weight: 500;">สมัครสมาชิกใหม่</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    const form = document.getElementById('login-form');
+    const alertBox = document.getElementById('alert-box');
+    const btnLogin = document.getElementById('btn-login');
+
+    function showAlert(msg, isError = true) {
+      alertBox.textContent = msg;
+      alertBox.className = isError ? 'alert alert-error' : 'alert alert-success';
+      alertBox.classList.remove('hidden');
+    }
+
+    function hideAlert() {
+      alertBox.classList.add('hidden');
+      alertBox.textContent = '';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const identifier = document.getElementById('identifier').value.trim();
+      const password = document.getElementById('password').value;
+
+      btnLogin.disabled = true;
+      btnLogin.textContent = 'กำลังเข้าสู่ระบบ...';
+
+      try {
+        const res = await api.post('/auth/login', { identifier, password });
+
+        // บันทึก Session Token
+        api.setToken(res.token);
+
+        // ถ้าสถานะเป็น pending_verification ให้แจ้งเตือนไปหน้า OTP
+        if (res.user && res.user.status === 'pending_verification') {
+          showAlert('บัญชีของคุณยังไม่ได้ยืนยันรหัส OTP กรุณายืนยันตัวตน', false);
+          setTimeout(() => {
+            location.href = `/pages/register.html?step=otp&userId=${res.user.id}`;
+          }, 1000);
+          return;
+        }
+
+        // กลับหน้าเดิมจาก ?next= (เฉพาะ path ในเว็บนี้ กัน open redirect) ไม่มีก็ไป dashboard (แอดมิน) / หน้าแรก
+        const next = new URLSearchParams(location.search).get('next') || '';
+        const safeNext = /^\/(?![\/\\])/.test(next) && !next.startsWith('/pages/login.html') ? next : '';
+        const isAdmin = res.user && ['admin', 'super_admin'].includes(res.user.role);
+        const target = safeNext || (isAdmin ? '/pages/admin/dashboard.html' : '/');
+        showAlert(target === '/' ? 'เข้าสู่ระบบสำเร็จ กำลังพาคุณไปหน้าแรก...' : 'เข้าสู่ระบบสำเร็จ กำลังพาคุณไปต่อ...', false);
+        setTimeout(() => {
+          location.href = target;
+        }, 800);
+      } catch (err) {
+        showAlert(err.message || 'อีเมล/ชื่อผู้ใช้ หรือรหัสผ่านไม่ถูกต้อง');
+        btnLogin.disabled = false;
+        btnLogin.textContent = 'เข้าสู่ระบบ';
+      }
+    });
+  </script>
+</body>
+</html>

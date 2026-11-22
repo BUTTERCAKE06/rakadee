@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>จัดการข้อพิพาท — Admin | Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+  <link rel="stylesheet" href="/css/qa.css" />
+</head>
+<body class="admin-page">
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+
+  <div class="admin-main">
+    <div class="admin-topbar" id="admin-topbar" data-title="จัดการข้อพิพาทและคำร้อง"></div>
+
+    <main class="admin-content">
+      <div id="alert-area"></div>
+
+      <div class="tabs" id="tabs" role="tablist">
+        <button type="button" data-status="active" class="active">กำลังดำเนินการ</button>
+        <button type="button" data-status="closed">สิ้นสุด</button>
+        <button type="button" data-status="">ทั้งหมด</button>
+      </div>
+
+      <form class="qa-toolbar" id="search-form" role="search">
+        <input type="search" id="search-input" placeholder="ค้นหาเลขคำสั่งซื้อ / ชื่อสินค้า / username" aria-label="ค้นหาข้อพิพาท" />
+        <button type="submit" class="btn">ค้นหา</button>
+      </form>
+
+      <div class="qa-table-wrap">
+        <table>
+          <thead>
+            <tr><th>ข้อพิพาท</th><th>คำสั่งซื้อ</th><th>สินค้า</th><th>ประเภท</th><th>ผู้ซื้อ / ผู้ขาย</th><th>ยอด</th><th>สถานะ</th><th>เปิดเมื่อ</th></tr>
+          </thead>
+          <tbody id="rows"><tr><td colspan="8" class="empty">กำลังโหลด...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="qa-pagination" id="pagination"></div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/admin-shell.js"></script>
+  <script src="/js/qa-common.js"></script>
+  <script src="/js/admin/disputes.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>การแจ้งเตือน | Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .notif-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .notif-toolbar .tabs { flex: 1; margin-bottom: 0; }
+    .notif-list { list-style: none; margin: 16px 0 0; padding: 0; background: var(--color-surface);
+      border: 1px solid var(--color-border); border-radius: var(--radius); overflow: hidden; }
+    .notif-item { display: flex; gap: 12px; padding: 14px 16px; border-top: 1px solid var(--color-border); }
+    .notif-item:first-child { border-top: 0; }
+    .notif-item.unread { background: color-mix(in srgb, var(--color-primary) 5%, #fff); }
+    .notif-dot { width: 8px; height: 8px; margin-top: 9px; border-radius: 50%; flex-shrink: 0; background: transparent; }
+    .notif-item.unread .notif-dot { background: var(--color-primary); }
+    .notif-body { flex: 1; min-width: 0; }
+    .notif-body a, .notif-body strong { color: var(--color-text); font-weight: 600; }
+    .notif-msg { margin: 2px 0 0; color: var(--color-text); overflow-wrap: anywhere; }
+    .notif-time { color: var(--color-muted); font-size: 13px; white-space: nowrap; }
+    .notif-tag { font-size: 12px; color: var(--color-muted); }
+    .pager { display: flex; justify-content: center; gap: 8px; margin-top: 16px; align-items: center; }
+  </style>
+</head>
+<body data-admin-shell>
+  <div id="navbar"></div>
+
+  <main class="container account-layout">
+    <aside class="account-nav" id="account-nav"></aside>
+
+    <section>
+      <h1 class="page-title">การแจ้งเตือน</h1>
+      <div id="alert"></div>
+
+      <div class="notif-toolbar">
+        <div class="tabs" role="tablist" id="tabs">
+          <button type="button" role="tab" data-group="" aria-selected="true">ทั้งหมด</button>
+          <button type="button" role="tab" data-group="auction" aria-selected="false">การประมูล</button>
+          <button type="button" role="tab" data-group="finance" aria-selected="false">การเงิน</button>
+          <button type="button" role="tab" data-group="shipping" aria-selected="false">การจัดส่ง</button>
+        </div>
+        <div class="row-actions">
+          <label class="hint"><input type="checkbox" id="unread-only"> เฉพาะที่ยังไม่อ่าน</label>
+          <button type="button" class="btn" id="read-all">อ่านทั้งหมดแล้ว</button>
+        </div>
+      </div>
+
+      <ul class="notif-list" id="list" aria-live="polite"></ul>
+      <div class="pager" id="pager"></div>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/account-nav.js"></script>
+  <script src="/js/notifications.js"></script>
+</body>
+</html>

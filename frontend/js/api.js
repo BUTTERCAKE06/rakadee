@@ -3,6 +3,7 @@
 //   const data = await api.get('/listings?sort=ending');
 //   const bid = await api.post(`/listings/${id}/bids`, { amount: 1500 });
 //   const res = await api.upload('/listings/1/images', formData);
+//   const file = await api.blob('/orders/1/shipment/proof');   // ไฟล์ที่ต้องแนบ token
 // ถ้า API ตอบ success:false จะ throw ApiError ที่มี code และ message ให้นำไปแสดงผล
 class ApiError extends Error {
   constructor(status, code, message, details) {
@@ -55,6 +56,22 @@ const api = (() => {
     patch: (path, body) => request('PATCH', path, body),
     del: (path) => request('DELETE', path),
     upload: (path, formData) => request('POST', path, formData, true),
+    // ไฟล์ที่ต้องตรวจสิทธิ์ (เช่น หลักฐานการจัดส่ง) → Blob ใช้กับ URL.createObjectURL()
+    blob: async (path) => {
+      const token = getToken();
+      let res;
+      try {
+        res = await fetch(BASE + path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      } catch {
+        throw new ApiError(0, 'NETWORK_ERROR', 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
+      }
+      if (!res.ok) {
+        let err = {};
+        try { err = (await res.json()).error || {}; } catch { /* not json */ }
+        throw new ApiError(res.status, err.code || 'UNKNOWN_ERROR', err.message || 'เปิดไฟล์ไม่ได้', err.details);
+      }
+      return res.blob();
+    },
     getToken,
     setToken,
   };

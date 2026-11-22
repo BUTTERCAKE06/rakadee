@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ข้อพิพาท — Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/qa.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container account-layout" style="padding-top:24px;">
+    <aside class="account-nav" id="seller-nav"></aside>
+
+    <section>
+      <h1 class="page-title">ข้อพิพาท</h1>
+      <p class="muted" style="margin-top:-8px;">ข้อพิพาทที่ผู้ซื้อเปิดกับสินค้าของคุณ ระหว่างนี้เงินใน Escrow ถูกล็อกจนกว่าแอดมินจะตัดสิน กรุณาส่งหลักฐานของคุณ</p>
+      <div id="alert-area" aria-live="polite"></div>
+
+      <div class="qa-pill-tabs" id="tabs" role="tablist" aria-label="กรองสถานะข้อพิพาท">
+        <button type="button" data-status="active" class="active">กำลังดำเนินการ</button>
+        <button type="button" data-status="closed">สิ้นสุด</button>
+        <button type="button" data-status="">ทั้งหมด</button>
+      </div>
+
+      <div class="qa-table-wrap is-nowrap">
+        <table>
+          <thead><tr><th>ข้อพิพาท</th><th>สินค้า</th><th>ประเภท</th><th>ผู้ซื้อ</th><th>สถานะ</th><th>เปิดเมื่อ</th><th></th></tr></thead>
+          <tbody id="rows"><tr><td colspan="7" class="empty">กำลังโหลด...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="qa-pagination" id="pagination"></div>
+    </section>
+  </main>
+
+  <footer class="qa-footer">
+    <div class="container">
+      <div>RAKADEE — แพลตฟอร์มประมูลสินค้าออนไลน์ มีระบบพักเงินกลาง (Escrow)</div>
+      <div class="links"><a href="/pages/terms.html">เงื่อนไขการให้บริการ</a> · <a href="/pages/terms.html#privacy">นโยบายความเป็นส่วนตัว (PDPA)</a> · <a href="/pages/help.html">ช่วยเหลือ</a></div>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/seller/seller-nav.js"></script>
+  <script src="/js/qa-common.js"></script>
+  <script src="/js/seller/disputes.js"></script>
+</body>
+</html>

@@ -210,3 +210,9 @@ img.au-thumb-sm { object-fit: cover; }
 .au-flash .alert { margin: 0; box-shadow: 0 4px 16px color-mix(in srgb, var(--color-text) 15%, transparent); }
 /* หน้าบัญชีของเราใช้ .account-layout ของ PM: ให้ตารางเลื่อนในกรอบแทนการดันหน้าจอล้น (มือถือ) */
 .au-page.account-layout > * { min-width: 0; }
+
+/* D-17 กล่องยืนยันราคาสูงผิดปกติ: ตัวเลขตัวใหญ่ + ราคาปัจจุบัน + ส่วนต่าง */
+.au-bigbid-amount { font-size: 36px; font-weight: 700; color: var(--color-danger); line-height: 1.2; margin: 8px 0 12px; word-break: break-all; }
+.au-bigbid-rows { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0 0 12px; }
+.au-bigbid-rows dt { color: var(--color-muted); font-weight: 400; }
+.au-bigbid-rows dd { margin: 0; text-align: right; font-weight: 600; }

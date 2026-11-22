@@ -113,6 +113,16 @@
     return { ok: true, satang };
   }
 
+  // ---------- D-17 กันบิดผิดราคา ----------
+  // ขึ้นกล่องยืนยันเมื่อราคาบิดหรือวงเงิน Proxy >= 2 เท่าของราคาปัจจุบัน (ยังไม่มีบิดใช้ราคาเริ่ม)
+  // ตัวคูณเป็นค่าคงที่ที่เดียวตาม decision-log D-17 ไม่มีเพดานฝั่ง server
+  const BID_CONFIRM_MULTIPLIER = 2;
+  function needsBidConfirm({ amountSatang, currentPrice, startPrice }) {
+    const base = currentPrice == null ? startPrice : currentPrice;
+    if (base == null || base <= 0 || amountSatang == null) return false;
+    return amountSatang >= base * BID_CONFIRM_MULTIPLIER;
+  }
+
   // ---------- ข้อมูลจาก API (api-spec 0.6) ----------
   // เงินใน JSON เป็นตัวเลขบาททศนิยม 2 ตำแหน่ง -> สตางค์ (ผ่าน toFixed(2) ไม่คูณ float ตรงๆ)
   function moneyToSatang(value) {
@@ -157,6 +167,7 @@
     NEAR_END_MS, URGENT_BADGE_MS,
     parseBahtToSatang, formatMoney, splitRemaining, formatRemaining,
     createClock, toMs, minNextBid, isBuyNowAvailable, validateBidInput, safeImageUrl,
+    BID_CONFIRM_MULTIPLIER, needsBidConfirm,
     moneyToSatang, satangToBaht, normalizeCard, CONDITION_NAMES,
   };
 

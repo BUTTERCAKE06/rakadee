@@ -18,6 +18,14 @@
   };
   const fmtDate = (iso) => (iso ? new Date(iso).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-');
 
+  // รอชำระ -> หน้าชำระเงินของ SA, สถานะอื่น -> รายละเอียดคำสั่งซื้อของ PM
+  // ใช้ path เดียวกับ order-view.js ของ PM (PAY_URL = /pages/payment.html?orderId=, orders.html?id=)
+  function orderUrl(w) {
+    if (!w.orderId) return '/pages/orders.html';
+    const id = encodeURIComponent(w.orderId);
+    return w.orderStatus === 'pending_payment' ? `/pages/payment.html?orderId=${id}` : `/pages/orders.html?id=${id}`;
+  }
+
   function row(w) {
     const [cls, text] = ORDER_STATUS[w.orderStatus] || ['', w.orderStatus];
     const img = A.safeImageUrl(w.coverUrl);
@@ -28,8 +36,7 @@
       h('td', { text: A.formatMoney(A.moneyToSatang(w.price)) }),
       h('td', { text: w.orderStatus === 'pending_payment' ? fmtDate(w.paymentDueAt) : '-' }),
       h('td', null, h('span', { class: `badge ${cls}`, text })),
-      h('td', null, h('a', { class: `btn ${w.orderStatus === 'pending_payment' ? 'btn-primary' : ''}`,
-        href: w.orderStatus === 'pending_payment' ? `/pages/payment.html?orderId=${w.orderId}` : '/pages/orders.html',
+      h('td', null, h('a', { class: `btn ${w.orderStatus === 'pending_payment' ? 'btn-primary' : ''}`, href: orderUrl(w),
         text: w.orderStatus === 'pending_payment' ? 'ชำระเงิน' : 'ดูคำสั่งซื้อ' })));
   }
 

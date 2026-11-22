@@ -31,6 +31,23 @@
     </div>
   </dialog>
 
+  <!-- D-17 กล่องยืนยันเมื่อราคาบิดหรือวงเงิน Proxy >= 2 เท่าของราคาปัจจุบัน -->
+  <dialog id="bigbid-dialog" class="au-dialog" aria-labelledby="bigbid-title">
+    <form method="dialog">
+      <h2 id="bigbid-title">ยืนยันราคาที่เสนอ</h2>
+      <p class="au-bigbid-amount" id="bigbid-amount"></p>
+      <dl class="au-bigbid-rows">
+        <dt id="bigbid-base-label">ราคาปัจจุบัน</dt><dd id="bigbid-base"></dd>
+        <dt>ส่วนต่าง</dt><dd id="bigbid-diff"></dd>
+      </dl>
+      <p class="au-hint" id="bigbid-note"></p>
+      <div class="au-dialog-actions">
+        <button type="submit" class="btn" value="cancel">แก้ไขราคา</button>
+        <button type="submit" class="btn btn-primary" value="confirm">ยืนยัน</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="/js/api.js"></script>
   <script src="/js/layout.js"></script>
   <script src="/js/auction-common.js"></script>

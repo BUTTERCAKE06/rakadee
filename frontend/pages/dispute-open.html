@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>แจ้งปัญหา / เปิดข้อพิพาท — Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/qa.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container" style="padding-top:24px;">
+    <h1 class="page-title" id="page-title">แจ้งปัญหาคำสั่งซื้อ</h1>
+    <div id="alert-area" aria-live="polite"></div>
+
+    <div class="qa-grid-main" style="grid-template-columns:minmax(0,420px) minmax(0,460px);">
+      <form id="form-dispute" class="card" novalidate>
+        <h2 class="qa-card-title">รายละเอียดปัญหา</h2>
+
+        <div class="form-group">
+          <label for="type">ประเภทปัญหา <span class="qa-required">*</span></label>
+          <select id="type">
+            <option value="">— เลือกประเภทปัญหา —</option>
+            <option value="not_as_described">สินค้าไม่ตรงปก</option>
+            <option value="damaged">สินค้าชำรุด / เสียหาย</option>
+            <option value="not_received">ไม่ได้รับสินค้า</option>
+            <option value="other">อื่นๆ</option>
+          </select>
+          <span class="hint">สินค้าชำรุด / ไม่ตรงปก / ไม่ได้รับสินค้า</span>
+          <span class="field-error" id="err-type"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="description">รายละเอียด <span class="qa-required">*</span></label>
+          <textarea id="description" rows="4" maxlength="2000" placeholder="อธิบายปัญหาที่พบ..."></textarea>
+          <span class="hint">อธิบายให้ชัดเจนเพื่อให้แอดมินตรวจสอบได้เร็ว (อย่างน้อย 10 ตัวอักษร)</span>
+          <span class="field-error" id="err-description"></span>
+        </div>
+
+        <div class="form-group">
+          <label>หลักฐาน (รูปถ่าย ไม่เกิน 5 รูป)</label>
+          <div class="qa-thumbs" id="preview"></div>
+          <div class="qa-drop" id="drop" role="button" tabindex="0" aria-label="อัปโหลดรูปหลักฐาน">
+            <span>⇪ อัปโหลดรูปหลักฐานเพิ่ม</span>
+            <small>jpg, jpeg, png ไม่เกิน 5MB ต่อรูป</small>
+            <input type="file" id="files" accept="image/jpeg,image/png" multiple />
+          </div>
+          <span class="field-error" id="err-files"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="contactInfo">ช่องทางติดต่อเพิ่มเติม</label>
+          <input type="text" id="contactInfo" maxlength="255" placeholder="เบอร์โทร / LINE ID" />
+          <span class="field-error" id="err-contactInfo"></span>
+        </div>
+
+        <button type="submit" class="btn btn-danger" id="btn-submit" style="width:100%;">ส่งเรื่องข้อพิพาท</button>
+      </form>
+
+      <aside class="card">
+        <h2 class="qa-card-title">ข้อควรรู้</h2>
+        <ul class="qa-list-plain">
+          <li>เปิดข้อพิพาทได้เฉพาะก่อนเงินถูกปล่อยให้ผู้ขาย</li>
+          <li>เมื่อเปิดแล้ว ระบบจะล็อกเงินใน Escrow ไว้จนกว่าแอดมินจะตัดสิน</li>
+          <li>ผู้ขายจะได้รับแจ้งเตือนและส่งหลักฐานของตนเองได้</li>
+        </ul>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="qa-footer">
+    <div class="container">
+      <div>RAKADEE — แพลตฟอร์มประมูลสินค้าออนไลน์ มีระบบพักเงินกลาง (Escrow)</div>
+      <div class="links"><a href="/pages/terms.html">เงื่อนไขการให้บริการ</a> · <a href="/pages/terms.html#privacy">นโยบายความเป็นส่วนตัว (PDPA)</a> · <a href="/pages/help.html">ช่วยเหลือ</a></div>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/qa-common.js"></script>
+  <script src="/js/dispute-open.js"></script>
+</body>
+</html>

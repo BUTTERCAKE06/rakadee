@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ข้อพิพาท — Rakadee</title>
+  <script>
+    // หน้าคำสั่งซื้อ (PM order-view.js) ลิงก์ "แจ้งปัญหา" มาที่ ?orderId= → ส่งต่อไปฟอร์มเปิดข้อพิพาท
+    (function () {
+      var p = new URLSearchParams(location.search);
+      if (p.get('orderId') && !p.get('id')) location.replace('/pages/dispute-open.html?orderId=' + encodeURIComponent(p.get('orderId')));
+    })();
+  </script>
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/qa.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <!-- หน้าเดียวใช้ทั้งผู้ซื้อ (ภาพ 22 ติดตามสถานะ) และผู้ขาย (ภาพ 38 ส่งหลักฐาน): /pages/disputes.html?id=<disputeId> -->
+  <main class="container" id="layout" style="padding-top:24px;">
+    <aside class="account-nav" id="seller-nav" hidden></aside>
+
+    <section>
+      <div class="qa-title-row">
+        <h1 id="page-title">ข้อพิพาท</h1>
+        <span id="status-pill"></span>
+      </div>
+      <div id="alert-area" aria-live="polite"></div>
+
+      <!-- มุมมองผู้ขาย (ภาพ 38) -->
+      <div class="card" id="seller-view" hidden>
+        <span id="seller-pill"></span>
+        <p class="muted" id="seller-summary" style="margin:8px 0 4px;font-size:14px;"></p>
+        <div id="seller-result"></div>
+        <h2 class="qa-card-title">หลักฐานของคุณ</h2>
+        <div class="qa-thumbs" id="seller-own-evidence"></div>
+      </div>
+
+      <!-- มุมมองผู้ซื้อ (ภาพ 22) -->
+      <div id="buyer-view" hidden>
+        <ol class="qa-stepper" id="stepper" aria-label="ขั้นตอนข้อพิพาท"></ol>
+        <div class="card" id="result-box" hidden style="margin-bottom:16px;"></div>
+        <div class="qa-grid-2">
+          <section class="card">
+            <h2 class="qa-card-title">หลักฐานของผู้ซื้อ (คุณ)</h2>
+            <p class="muted" id="buyer-desc" style="margin:0;"></p>
+            <div class="qa-thumbs" id="buyer-evidence"></div>
+            <button type="button" class="btn btn-link" id="btn-show-upload" style="padding-left:0;margin-top:8px;" hidden>+ ส่งหลักฐานเพิ่ม</button>
+          </section>
+          <section class="card">
+            <h2 class="qa-card-title">หลักฐานของผู้ขาย</h2>
+            <p class="muted" style="margin:0;">รอผู้ขายส่งหลักฐาน (ภาพก่อนแพ็ก / หลักฐานการส่ง)</p>
+            <div class="qa-thumbs" id="seller-evidence"></div>
+          </section>
+        </div>
+        <section class="card" style="margin-top:16px;">
+          <h2 class="qa-card-title">ไทม์ไลน์คำสั่งซื้อ</h2>
+          <ul class="qa-timeline" id="timeline"></ul>
+        </section>
+      </div>
+
+      <!-- ฟอร์มส่งหลักฐาน: ผู้ขายแสดงในการ์ดเลย / ผู้ซื้อเปิดจากปุ่ม "ส่งหลักฐานเพิ่ม" -->
+      <form id="evidence-form" novalidate hidden>
+        <div class="qa-thumbs" id="preview"></div>
+        <div class="qa-drop" id="drop" role="button" tabindex="0" aria-label="อัปโหลดรูปหลักฐาน">
+          <span id="drop-label">อัปโหลดรูปหลักฐาน</span>
+          <small>jpg, jpeg, png ไม่เกิน 5MB ต่อรูป สูงสุด 5 รูปต่อครั้ง</small>
+          <input type="file" id="files" accept="image/jpeg,image/png" multiple />
+        </div>
+        <span class="field-error" id="err-files"></span>
+        <div class="form-group" style="margin-top:12px;">
+          <label for="note">หมายเหตุ (ไม่บังคับ)</label>
+          <input type="text" id="note" maxlength="500" placeholder="เช่น ภาพก่อนแพ็ก / ใบเสร็จขนส่ง" />
+          <span class="field-error" id="err-note"></span>
+        </div>
+        <button type="submit" class="btn btn-navy" id="btn-evidence">ส่งหลักฐาน</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="qa-footer">
+    <div class="container">
+      <div>RAKADEE — แพลตฟอร์มประมูลสินค้าออนไลน์ มีระบบพักเงินกลาง (Escrow)</div>
+      <div class="links"><a href="/pages/terms.html">เงื่อนไขการให้บริการ</a> · <a href="/pages/terms.html#privacy">นโยบายความเป็นส่วนตัว (PDPA)</a> · <a href="/pages/help.html">ช่วยเหลือ</a></div>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/seller/seller-nav.js"></script>
+  <script src="/js/qa-common.js"></script>
+  <script src="/js/disputes.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ข้อพิพาท — Admin | Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+  <link rel="stylesheet" href="/css/qa.css" />
+</head>
+<body class="admin-page">
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+
+  <div class="admin-main">
+    <div class="admin-topbar" id="admin-topbar"></div>
+
+    <main class="admin-content">
+      <p><a href="/pages/admin/disputes.html">← กลับไปรายการข้อพิพาท</a></p>
+      <div class="qa-title-row">
+        <h1 id="page-title">ข้อพิพาท</h1>
+        <span id="status-pill"></span>
+      </div>
+      <div id="alert-area" aria-live="polite"></div>
+
+      <div id="content" hidden>
+        <div class="qa-grid-2">
+          <section class="card">
+            <h2 class="qa-card-title" id="buyer-title">หลักฐานผู้ซื้อ</h2>
+            <p class="muted" id="buyer-desc" style="margin:0;"></p>
+            <div class="qa-thumbs" id="buyer-evidence"></div>
+          </section>
+          <section class="card">
+            <h2 class="qa-card-title" id="seller-title">หลักฐานผู้ขาย</h2>
+            <p class="muted" id="seller-desc" style="margin:0;"></p>
+            <div class="qa-thumbs" id="seller-evidence"></div>
+          </section>
+        </div>
+
+        <section class="card" style="margin-top:16px;">
+          <h2 class="qa-card-title" id="timeline-title">ไทม์ไลน์คำสั่งซื้อ</h2>
+          <ul class="qa-timeline is-rows" id="timeline"></ul>
+        </section>
+
+        <section class="card" id="result-box" style="margin-top:16px;" hidden></section>
+
+        <div id="actions" hidden>
+          <div class="row-actions" style="margin-top:16px;">
+            <button type="button" class="btn btn-danger" id="btn-refund">คืนเงินผู้ซื้อ (Refund)</button>
+            <button type="button" class="btn btn-navy" id="btn-release">ปล่อยเงินผู้ขาย (Release)</button>
+          </div>
+
+          <!-- เพิ่มจากภาพ: เปลี่ยนสถานะระหว่างตรวจสอบ (API 9.5) -->
+          <section class="card" style="margin-top:16px;">
+            <h2 class="qa-card-title" style="font-size:15px;">เปลี่ยนสถานะระหว่างตรวจสอบ</h2>
+            <div class="row-actions">
+              <select id="status-select" aria-label="สถานะใหม่">
+                <option value="awaiting_evidence">รอหลักฐาน</option>
+                <option value="investigating">กำลังตรวจสอบ</option>
+                <option value="return_in_progress">ดำเนินการคืนสินค้า</option>
+                <option value="refund_in_progress">ดำเนินการคืนเงิน</option>
+              </select>
+              <input type="text" id="status-note" maxlength="1000" placeholder="หมายเหตุ (ไม่บังคับ)" style="flex:1;min-width:200px;" />
+              <button type="button" class="btn" id="btn-status">บันทึกสถานะ</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/admin-shell.js"></script>
+  <script src="/js/qa-common.js"></script>
+  <script src="/js/admin/dispute-detail.js"></script>
+</body>
+</html>

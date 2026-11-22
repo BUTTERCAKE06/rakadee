@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ตรวจคำขอเปิดร้าน — Admin | Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+  <link rel="stylesheet" href="/css/qa.css" />
+</head>
+<body class="admin-page">
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+
+  <div class="admin-main">
+    <div class="admin-topbar" id="admin-topbar"></div>
+
+    <main class="admin-content">
+      <p><a href="/pages/admin/seller-applications.html">← กลับไปรายการคำขอ</a></p>
+      <div class="qa-title-row">
+        <h1 id="page-title">คำขอเปิดร้าน</h1>
+        <span id="status-pill"></span>
+      </div>
+      <div id="alert-area" aria-live="polite"></div>
+
+      <div id="content" hidden>
+        <div class="qa-grid-2">
+          <section class="card">
+            <h2 class="qa-card-title">ข้อมูลผู้สมัคร</h2>
+            <dl class="qa-kv" id="user-kv"></dl>
+          </section>
+          <section class="card">
+            <h2 class="qa-card-title">ข้อมูลร้าน</h2>
+            <dl class="qa-kv" id="shop-kv"></dl>
+          </section>
+        </div>
+
+        <div class="qa-grid-2" style="margin-top:16px;">
+          <section class="card">
+            <h2 class="qa-card-title">ประวัติการบิดและซื้อ</h2>
+            <dl class="qa-kv" id="stats-kv"></dl>
+          </section>
+          <section class="card">
+            <h2 class="qa-card-title">ประวัติความผิด</h2>
+            <ul class="qa-list-plain" id="penalties"></ul>
+          </section>
+        </div>
+
+        <div class="row-actions" id="actions" style="margin-top:20px;" hidden>
+          <button type="button" class="btn btn-primary" id="btn-approve">อนุมัติให้เป็นผู้ขาย</button>
+          <button type="button" class="btn btn-danger" id="btn-reject">ไม่อนุมัติ</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/admin-shell.js"></script>
+  <script src="/js/qa-common.js"></script>
+  <script src="/js/admin/seller-application.js"></script>
+</body>
+</html>

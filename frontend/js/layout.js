@@ -193,7 +193,7 @@
         link('/pages/search.html#categories', 'หมวดหมู่'),
         link('/pages/help.html', 'ช่วยเหลือ'),
       );
-      if (user && user.isSeller) links.appendChild(link('/pages/seller/listings.html', 'ผู้ขาย'));
+      if (user && user.isSeller) links.appendChild(link('/pages/seller/dashboard.html', 'ผู้ขาย'));
       if (isAdmin(user)) links.appendChild(link('/pages/admin/dashboard.html', 'แอดมิน'));
 
       const actions = el('div', 'actions');

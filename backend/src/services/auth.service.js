@@ -312,7 +312,7 @@ async function verifyOtp(userId, code, ipAddress = '127.0.0.1', userAgent = '') 
     );
 
     // 6. สร้างกระเป๋าเงิน Mock Wallet 10,000 บาท (D-05)
-    await wallet.create(userId, conn);
+    const createdWallet = await wallet.create(userId, conn);
 
     // 7. สร้าง Session Token
     const sessionToken = generateRandomToken(32);
@@ -359,7 +359,7 @@ async function verifyOtp(userId, code, ipAddress = '127.0.0.1', userAgent = '') 
       token: sessionToken,
       expiresAt: expiresAt.toISOString(),
       user: userMe,
-      walletBalance: 10000.00,
+      walletBalance: createdWallet.balance,
     };
   });
   if (out.otpError) throw out.otpError;

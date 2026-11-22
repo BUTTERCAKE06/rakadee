@@ -762,6 +762,7 @@ async function getSellerEarnings(sellerId) {
     [sellerId]
   );
 
+  const feeCfg = await require('./settings').feeConfig();
   let totalReleased = 0;
   let totalPending = 0;
   let totalFees = 0;
@@ -780,7 +781,7 @@ async function getSellerEarnings(sellerId) {
       totalReleased += netAmount;
       totalFees += feeAmount;
     } else if (status === 'held') {
-      feeAmount = escrow.calculatePlatformFee(itemPrice);
+      feeAmount = escrow.calculatePlatformFee(itemPrice, feeCfg);
       netAmount = Math.max(0, itemPrice + shippingFee - feeAmount);
       totalPending += netAmount;
     } else {

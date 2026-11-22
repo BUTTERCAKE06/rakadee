@@ -577,7 +577,11 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 
 **11.7** query `adminId` (Super Admin เท่านั้น), `action`, `targetType`, `from`, `to` (`YYYY-MM-DD` ตามเวลาไทย), `sort` (`newest` ค่าเริ่มต้น / `oldest` / `admin` / `action`) → `{ items: [{ id, admin: { id, displayName }, action, targetType, targetId, detail, ipAddress, createdAt }], page, limit, total, filters: { actions, admins } }` (Admin เห็นเฉพาะของตัวเอง)
 
-**11.8 / 11.9** `{ "settings": { "platform_fee_percent": "5", "platform_fee_min": "20", ... } }` → ค่าใหม่ทั้งหมด + `audit.log(SETTING_UPDATE)` · Errors: `INVALID_SETTING` (400)
+**11.8** → `{ settings: { platform_fee_percent: "5", platform_fee_min: "20", initial_wallet_credit: "10000", terms_version: "1.0", privacy_version: "1.0" }, items: [{ key, value, label, description, hint, updatedAt, updatedBy: { id, displayName } | null }] }`
+
+**11.9** `{ "settings": { "platform_fee_percent": "4.5" } }` (ส่งเฉพาะค่าที่แก้) → แบบเดียวกับ 11.8 + `changed: [key]` · `audit.log(SETTING_UPDATE, 'setting', 'system', { changes: { key: { from, to } } })` · Errors: `INVALID_SETTING` (400, `details: { key: เหตุผล }`)
+- `platform_fee_percent` 0–100, `platform_fee_min` 0–100,000, `initial_wallet_credit` 0–1,000,000 (ทศนิยม ≤ 2) · `terms_version` / `privacy_version` รูปแบบ `1.0`
+- ค่าทั้งหมดอ่านผ่าน `services/settings.js` (`feeConfig()`, `initialCredit()`, `get(key)`) ห้าม hard-code · ค่าธรรมเนียมคิดตามค่าตั้ง ณ เวลา `escrow.release()` · เครดิตแรกเข้ามีผลกับบัญชีที่ยืนยัน OTP หลังบันทึก
 
 **รายการ action ของ `audit.log()`:** `SELLER_APPROVE`, `SELLER_REJECT`, `LISTING_APPROVE`, `LISTING_REJECT`, `PAYMENT_APPROVE`, `PAYMENT_REJECT`, `DISPUTE_STATUS`, `DISPUTE_RESOLVE`, `USER_STATUS`, `USER_BAN`, `BLACKLIST_REVOKE`, `FLAG_REVIEW`, `SETTING_UPDATE`
 

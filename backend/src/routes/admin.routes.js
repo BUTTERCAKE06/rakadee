@@ -1,9 +1,10 @@
-// Admin Dashboard + Audit Log (เจ้าของ: PM) — api-spec 11.5–11.7 · mount ที่ /api/admin
+// Admin Dashboard + Audit Log + ตั้งค่าระบบ (เจ้าของ: PM) — api-spec 11.5–11.9 · mount ที่ /api/admin
 const express = require('express');
 const { requireAuth, requireRole } = require('../middlewares/auth');
 const { ok, asyncHandler } = require('../utils/response');
 const pagination = require('../utils/pagination');
 const service = require('../services/admin.service');
+const settings = require('../services/settings');
 
 const router = express.Router();
 const admin = [requireAuth, requireRole('admin')];
@@ -21,6 +22,15 @@ router.get('/dashboard/charts', ...admin, asyncHandler(async (req, res) => {
 // 11.7 Audit Log (?adminId=&action=&targetType=&from=YYYY-MM-DD&to=YYYY-MM-DD&sort=newest|oldest|admin|action&page=)
 router.get('/audit-logs', ...admin, asyncHandler(async (req, res) => {
   ok(res, await service.listAuditLogs(req.user, { ...req.query, ...pagination(req.query) }));
+}));
+
+// 11.8 / 11.9 ตั้งค่าระบบ (Super Admin เท่านั้น)
+const superAdmin = [requireAuth, requireRole('super_admin')];
+router.get('/settings', ...superAdmin, asyncHandler(async (req, res) => {
+  ok(res, await settings.list());
+}));
+router.put('/settings', ...superAdmin, asyncHandler(async (req, res) => {
+  ok(res, await settings.update(req.user, req.body && req.body.settings, req.ip));
 }));
 
 module.exports = router;

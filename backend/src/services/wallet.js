@@ -2,8 +2,9 @@
 // wallet.create(userId)
 const { withTransaction, pool } = require('../config/db');
 const { calculatePlatformFee } = require('./escrow');
+const settings = require('./settings');
 
-const INITIAL_CREDIT_AMOUNT = 10000.00;
+const INITIAL_CREDIT_AMOUNT = 10000.00; // ค่าเริ่มต้น D-05 ค่าจริงอ่านจากตั้งค่าระบบ (initial_wallet_credit)
 
 /**
  * สร้างกระเป๋าเงิน Mock Wallet และเติมเครดิตแรกเข้า 10,000 บาท (D-05)
@@ -12,6 +13,7 @@ const INITIAL_CREDIT_AMOUNT = 10000.00;
  * @returns {Promise<{ walletId: number, balance: number }>}
  */
 async function create(userId, existingConn = null) {
+  const credit = await settings.initialCredit();
   const runner = async (conn) => {
     // 1. ตรวจสอบว่ามี Wallet อยู่แล้วหรือไม่ (กันสร้างซ้ำ)
     const [existing] = await conn.query(
@@ -29,21 +31,23 @@ async function create(userId, existingConn = null) {
     // 2. สร้าง Wallet ด้วยยอดเครดิตเริ่มต้น 10,000 บาท
     const [result] = await conn.query(
       'INSERT INTO wallets (user_id, balance) VALUES (?, ?)',
-      [userId, INITIAL_CREDIT_AMOUNT]
+      [userId, credit]
     );
     const walletId = Number(result.insertId);
 
-    // 3. บันทึกธุรกรรมแรกเข้าใน ledger (wallet_transactions)
-    await conn.query(
-      `INSERT INTO wallet_transactions
-        (wallet_id, type, amount, balance_after, note)
-       VALUES (?, 'initial_credit', ?, ?, 'เครดิตแรกเข้า')`,
-      [walletId, INITIAL_CREDIT_AMOUNT, INITIAL_CREDIT_AMOUNT]
-    );
+    // 3. บันทึกธุรกรรมแรกเข้าใน ledger (ข้ามเมื่อตั้งเครดิตเป็น 0 เพราะ ledger ห้ามยอด 0)
+    if (credit > 0) {
+      await conn.query(
+        `INSERT INTO wallet_transactions
+          (wallet_id, type, amount, balance_after, note)
+         VALUES (?, 'initial_credit', ?, ?, 'เครดิตแรกเข้า')`,
+        [walletId, credit, credit]
+      );
+    }
 
     return {
       walletId,
-      balance: INITIAL_CREDIT_AMOUNT,
+      balance: credit,
     };
   };
 
@@ -83,9 +87,10 @@ async function getWalletSummary(userId) {
     [userId]
   );
 
+  const feeCfg = await settings.feeConfig();
   let pendingIncome = 0;
   for (const row of escrowRows) {
-    const fee = calculatePlatformFee(Number(row.item_price));
+    const fee = calculatePlatformFee(Number(row.item_price), feeCfg);
     const net = Math.max(0, Number(row.amount) - fee);
     pendingIncome += net;
   }

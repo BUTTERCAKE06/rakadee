@@ -83,7 +83,9 @@
       if (l.detail) {
         const det = document.createElement('div');
         det.className = 'detail';
-        det.textContent = Object.entries(l.detail).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`).join(', ');
+        det.textContent = l.detail.changes
+          ? Object.entries(l.detail.changes).map(([k, c]) => `${k}: ${c.from} → ${c.to}`).join(', ')
+          : Object.entries(l.detail).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`).join(', ');
         target.appendChild(det);
       }
       tr.append(

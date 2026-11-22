@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ตั้งค่าระบบ — Admin | Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .settings-wrap { max-width: 760px; }
+    .set-section { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+    .set-section h2 { font-size: 17px; margin: 0 0 4px; }
+    .set-section > p { margin: 0 0 16px; }
+    .set-row { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 8px 16px; align-items: start; padding: 12px 0; border-top: 1px solid var(--color-border); }
+    .set-row:first-of-type { border-top: 0; }
+    .set-row label { margin: 0; }
+    .set-row .meta { color: var(--color-muted); font-size: 13px; font-weight: 400; }
+    .set-row input { width: 100%; }
+    .set-row.changed input { border-color: var(--color-accent); box-shadow: 0 0 0 1px var(--color-accent); }
+    .fee-preview { background: var(--color-bg); border-radius: var(--radius); padding: 12px 16px; margin-top: 8px; }
+    .fee-preview table { background: transparent; }
+    .fee-preview th, .fee-preview td { padding: 6px 8px; background: transparent; }
+    .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    @media (max-width: 640px) { .set-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body class="admin-page">
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+
+  <div class="admin-main">
+    <div class="admin-topbar" id="admin-topbar" data-title="ตั้งค่าระบบ"></div>
+
+    <main class="admin-content settings-wrap">
+      <div id="alert"></div>
+      <form id="form" novalidate>
+        <section class="set-section">
+          <h2>ค่าธรรมเนียมแพลตฟอร์ม</h2>
+          <p class="muted">คิดจากราคาปิดประมูลเท่านั้น ไม่รวมค่าส่ง สูตร min(max(ราคาปิด × %, ขั้นต่ำ), ราคาปิด) ใช้ค่าที่ตั้ง ณ เวลาปล่อยเงินให้ผู้ขาย</p>
+          <div id="fee-rows"></div>
+          <div class="fee-preview">
+            <strong>ตัวอย่างตามค่าที่กรอก</strong>
+            <table><thead><tr><th>ราคาปิด</th><th>ค่าธรรมเนียม</th><th>ผู้ขายได้รับ (ไม่รวมค่าส่ง)</th></tr></thead><tbody id="preview"></tbody></table>
+          </div>
+        </section>
+        <section class="set-section">
+          <h2>Mock Wallet</h2>
+          <p class="muted">เครดิตที่สมาชิกใหม่ได้รับเมื่อยืนยัน OTP สำเร็จ มีผลกับสมาชิกที่ยืนยันหลังจากบันทึกเท่านั้น</p>
+          <div id="wallet-rows"></div>
+        </section>
+        <section class="set-section">
+          <h2>เอกสารข้อตกลง</h2>
+          <p class="muted">เวอร์ชันที่บันทึกพร้อมการยอมรับของผู้สมัครใหม่ (ข้อ 2.1)</p>
+          <div id="doc-rows"></div>
+        </section>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary" id="save">บันทึกการเปลี่ยนแปลง</button>
+          <button type="button" class="btn" id="revert">ยกเลิกการแก้ไข</button>
+          <span class="muted" id="dirty-note"></span>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/admin-shell.js"></script>
+  <script src="/js/admin/settings.js"></script>
+</body>
+</html>

@@ -11,6 +11,7 @@ const ADMIN_NAV = [
   { href: '/pages/admin/orders.html', label: 'คำสั่งซื้อทั้งหมด', match: ['/pages/admin/orders.html'] },
   { href: '/pages/admin/disputes.html', label: 'จัดการข้อพิพาทและคำร้อง', match: ['/pages/admin/disputes.html'] },
   { href: '/pages/admin/audit-logs.html', label: 'บันทึกการทำงาน (Audit Log)', match: ['/pages/admin/audit-logs.html'] },
+  { href: '/pages/admin/settings.html', label: 'ตั้งค่าระบบ', match: ['/pages/admin/settings.html'], superAdminOnly: true },
 ];
 
 const ICON_SEARCH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
@@ -39,7 +40,7 @@ function renderSidebar(user) {
   brand.appendChild(txt);
 
   const nav = mk('nav', 'admin-nav');
-  ADMIN_NAV.forEach((item) => {
+  ADMIN_NAV.filter((item) => !item.superAdminOnly || (user && user.role === 'super_admin')).forEach((item) => {
     const a = mk('a', item.match.includes(location.pathname) ? 'active' : '', item.label);
     a.href = item.href;
     nav.appendChild(a);

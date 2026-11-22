@@ -5,18 +5,24 @@
 const { withTransaction } = require('../config/db');
 const AppError = require('../utils/AppError');
 const { notify, EVENTS } = require('./notify');
+const settings = require('./settings');
+
+// ค่าเริ่มต้นตาม requirement 5.4 (ค่าจริงอ่านจากตั้งค่าระบบด้วย settings.feeConfig())
+const DEFAULT_FEE = { percent: 5, min: 20 };
 
 /**
  * คำนวณค่าธรรมเนียมแพลตฟอร์ม requirement 5.4 / D-10
- * สูตร: min(max(ราคาปิด × 5%, 20), ราคาปิด)
- * คำนวณจากราคาปิดประมูลเท่านั้น (ไม่รวมค่าส่ง) 
+ * สูตร: min(max(ราคาปิด × percent%, min), ราคาปิด) ค่าเริ่มต้น 5% ขั้นต่ำ 20 บาท (Super Admin แก้ได้ที่ตั้งค่าระบบ)
+ * คำนวณจากราคาปิดประมูลเท่านั้น (ไม่รวมค่าส่ง) เป็นสตางค์จำนวนเต็ม
  * @param {number} itemPrice ราคาปิดประมูล (บาท)
+ * @param {{ percent: number, min: number }} [cfg] จาก settings.feeConfig()
  * @returns {number} ค่าธรรมเนียม (บาท)
  */
-function calculatePlatformFee(itemPrice) {
+function calculatePlatformFee(itemPrice, cfg = DEFAULT_FEE) {
   const itemSatang = Math.round(Number(itemPrice) * 100);
-  const minFeeSatang = 20 * 100; // ขั้นต่ำ 20 บาท
-  const calculatedFeeSatang = Math.round(itemSatang * 0.05); // 5%
+  const minFeeSatang = Math.round(Number(cfg.min) * 100);
+  const basisPoints = Math.round(Number(cfg.percent) * 100); // 5% = 500
+  const calculatedFeeSatang = Math.round((itemSatang * basisPoints) / 10000);
 
   let feeSatang = Math.max(calculatedFeeSatang, minFeeSatang);
   feeSatang = Math.min(feeSatang, itemSatang); // ห้ามเกินราคาประมูล
@@ -108,7 +114,7 @@ async function release(orderId, existingConn = null) {
     const totalAmount = Number(order.total_amount);
 
     // 4. คำนวณค่าธรรมเนียมแพลตฟอร์ม: คิดจาก item_price เท่านั้น (D-10)
-    const feeAmount = calculatePlatformFee(itemPrice);
+    const feeAmount = calculatePlatformFee(itemPrice, await settings.feeConfig()); // ค่าตั้ง ณ เวลาปล่อยเงิน
     const netSellerAmount = totalAmount - feeAmount;
 
     // 5. โอนเงินสุทธิเข้า Wallet ของผู้ขาย

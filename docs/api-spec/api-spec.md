@@ -306,7 +306,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 
 - `minNextBid` = `startPrice` ถ้ายังไม่มีบิด ไม่งั้น `currentPrice + bidIncrement`
 - `buyNowAvailable` = สถานะ active และมี `buyNowPrice` และ (ยังไม่มีบิด หรือ `currentPrice < buyNowPrice`) (D-15)
-- `me` เป็น `null` สำหรับ Guest; เจ้าของสินค้าได้ `reservePrice` เพิ่ม
+- `me` เป็น `null` สำหรับ Guest; เจ้าของสินค้าและแอดมินได้ `reservePrice` และ `durationDays` (1 | 3 | 7 ใช้ในหน้าแก้ไขสินค้า) เพิ่ม
 - สินค้า draft/pending/rejected/cancelled ของคนอื่นตอบ `NOT_FOUND`
 
 **5.3** → `{ items: [{ bidder: "b***1", isMe: false, amount: 1500.00, bidType: "manual", createdAt }], page, limit, total }` เรียงใหม่สุดก่อน (`bidType` ของ Proxy แสดงเป็น `"auto"`)

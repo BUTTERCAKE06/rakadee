@@ -224,6 +224,7 @@ async function detail(listingId, user) {
     me,
   };
   if (isOwner || isAdmin) out.reservePrice = num(r.reserve_price); // api-spec 0.5
+  if (isOwner || isAdmin) out.durationDays = r.duration_days; // ระยะเวลาประมูลที่ตั้งไว้ (หน้าแก้ไขสินค้าของผู้ขาย)
   return out;
 }
 

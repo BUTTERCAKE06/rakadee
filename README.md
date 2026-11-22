@@ -1,6 +1,6 @@
 # Rakadee — เว็บประมูลสินค้าออนไลน์
 
-งานรายวิชา CSI204 ระบบประมูลสินค้าออนไลน์แบบ real-time พร้อม Mock Wallet, Escrow และระบบจัดการข้อพิพาท
+งานรายวิชา CSI400 ระบบประมูลสินค้าออนไลน์แบบ real-time พร้อม Mock Wallet, Escrow และระบบจัดการข้อพิพาท
 
 ## ติดตั้งและรัน
 
@@ -10,21 +10,24 @@
 cd backend
 npm install
 cp .env.example .env      # Windows: copy .env.example .env
-# แก้ค่า DB_* ใน .env ให้ตรงกับ MySQL ในเครื่อง
+# แก้ค่า DB_* ใน .env ให้ตรงกับ MySQL ในเครื่อง และสร้างคีย์เข้ารหัสเลขบัตรใหม่ (วิธีอยู่ใน .env.example)
 npm run db:init           # สร้างตารางทั้งหมด + ข้อมูลทดสอบ (ลบข้อมูลเดิม)
 npm run dev
 ```
 
-เปิด http://localhost:3000 หน้าแรกจะแสดงสถานะ API และ Database
+เปิด http://localhost:3000 (เช็กสถานะ API และ Database ได้ที่ http://localhost:3000/api/health)
 
 - `npm run dev` รีสตาร์ตเองเมื่อแก้ไฟล์ (ใช้ตอนพัฒนา)
 - `npm start` รันปกติ
+- `npm test` unit test (สูตรค่าธรรมเนียม)
 
 บัญชีทดสอบจาก seed: `superadmin` / `Super@1234`, `admin` / `Admin@1234`, `seller1` `buyer1` `buyer2` / `Test@1234` (สมาชิกมี Wallet 10,000 บาท)
 
 ถ้า Database ขึ้นว่า unavailable ให้เช็กว่า MySQL เปิดอยู่ และค่า `DB_*` ใน `.env` ถูกต้อง
 
-### ทดสอบหน้าที่ต้อง login (ระหว่างที่หน้า login ของ SA ยังไม่พร้อม)
+### ทดสอบโดยไม่ต้องผ่านหน้า login
+
+ใช้ตอนทดสอบ API หรือสลับบัญชีเร็วๆ (ใช้ได้เฉพาะเครื่องตัวเอง ไม่ทำงานเมื่อ `NODE_ENV=production`)
 
 ```bash
 npm run dev:token -- buyer1      # หรือ seller1, admin, superadmin
@@ -36,6 +39,10 @@ npm run dev:token -- buyer1      # หรือ seller1, admin, superadmin
 - **Postman / curl:** ใส่ header `Authorization: Bearer <token>`
 
 อีเมลแจ้งเตือนจะแสดงใน console ของ server จนกว่าจะตั้ง `SMTP_*` ใน `.env`
+
+### ทดสอบเรื่องเวลา (ชำระเงิน 48 ชม., ส่งของ 72 ชม., ปล่อยเงิน 7 วัน ฯลฯ)
+
+เปิดบรรทัด `*_MINUTES` ใน `.env` แล้วใส่ค่าสั้นๆ เช่น `PAYMENT_DUE_MINUTES=5` แล้วรีสตาร์ต server (Scheduler ตรวจทุก 1 นาที)
 
 ## ใช้ AI เขียนโค้ด
 

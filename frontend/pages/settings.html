@@ -17,6 +17,12 @@
     .notif-group:first-of-type { border-top: 0; }
     .notif-group label { font-weight: 400; display: flex; gap: 6px; align-items: center; white-space: nowrap; }
     .table-wrap { overflow-x: auto; }
+    .public-preview { display: flex; gap: 16px; align-items: flex-start; padding: 16px; border: 1px dashed var(--color-border);
+      border-radius: var(--radius); background: var(--color-bg); }
+    .public-preview .info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .public-preview .name { font-size: 18px; font-weight: 700; }
+    .public-preview .badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .public-preview .bio { margin: 4px 0 0; white-space: pre-line; overflow-wrap: anywhere; }
     [hidden] { display: none !important; }
   </style>
 </head>
@@ -84,6 +90,13 @@
             </div>
             <button type="submit" class="btn btn-primary">บันทึกการเปลี่ยนแปลง</button>
           </form>
+        </div>
+
+        <!-- ตัวอย่างข้อมูลสาธารณะ (api-spec 2.11) ผู้ใช้อื่นเห็นเท่านี้ -->
+        <div class="card section" id="public-card" data-member-block hidden>
+          <h2>ตัวอย่างข้อมูลสาธารณะ</h2>
+          <p class="hint">ผู้ใช้อื่นเห็นข้อมูลของคุณแบบนี้ (ไม่แสดงอีเมล เบอร์โทร และเลขบัตร)</p>
+          <div class="public-preview" id="public-preview"></div>
         </div>
       </div>
 

@@ -94,17 +94,90 @@
     unreadBadge.hidden = count === 0;
   }
 
+  function timeAgo(iso) {
+    const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 60) return 'เมื่อสักครู่';
+    if (diff < 3600) return `${Math.floor(diff / 60)} นาทีที่แล้ว`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} ชั่วโมงที่แล้ว`;
+    if (diff < 172800) return 'เมื่อวาน';
+    return new Date(iso).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+  }
+
+  // กระดิ่ง: กดแล้วเปิด dropdown แจ้งเตือนล่าสุด 5 รายการ (11.1) กดรายการ = อ่านแล้ว (11.3) แล้วไปหน้าที่เกี่ยวข้อง
+  const NOTIF_PREVIEW = 5;
   function buildBell() {
     const wrap = el('div', 'nav-bell');
-    const btn = el('a', 'icon-btn');
-    btn.href = '/pages/notifications.html';
+    const btn = el('button', 'icon-btn');
+    btn.type = 'button';
     btn.title = 'การแจ้งเตือน';
     btn.setAttribute('aria-label', 'การแจ้งเตือน');
+    btn.setAttribute('aria-haspopup', 'true');
+    btn.setAttribute('aria-expanded', 'false');
     btn.insertAdjacentHTML('beforeend', ICON.bell);
     unreadBadge = el('span', 'badge-count', '0');
     unreadBadge.hidden = true;
     btn.appendChild(unreadBadge);
-    wrap.appendChild(btn);
+
+    const panel = el('div', 'nav-notif');
+    panel.hidden = true;
+    const head = el('div', 'nav-notif-head');
+    const readAll = el('button', 'link-btn', 'อ่านทั้งหมดแล้ว');
+    readAll.type = 'button';
+    head.append(el('strong', '', 'การแจ้งเตือน'), readAll);
+    const list = el('ul', 'nav-notif-list');
+    const foot = link('/pages/notifications.html', 'ดูทั้งหมด', 'nav-notif-foot');
+    panel.append(head, list, foot);
+
+    const setOpen = (open) => {
+      panel.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      if (open) load();
+    };
+
+    async function load() {
+      list.replaceChildren(el('li', 'nav-notif-empty', 'กำลังโหลด...'));
+      try {
+        const d = await api.get(`/notifications?limit=${NOTIF_PREVIEW}`);
+        setUnread(d.unreadCount);
+        readAll.hidden = !d.unreadCount;
+        if (!d.items.length) {
+          list.replaceChildren(el('li', 'nav-notif-empty', 'ยังไม่มีการแจ้งเตือน'));
+          return;
+        }
+        list.replaceChildren(...d.items.map((n) => {
+          const li = el('li', n.isRead ? 'nav-notif-item' : 'nav-notif-item unread');
+          const a = link(n.linkUrl || '/pages/notifications.html', '');
+          a.append(el('span', 'nav-notif-dot'), el('span', 'nav-notif-body'));
+          const body = a.lastChild;
+          body.append(el('strong', '', n.title), el('span', 'nav-notif-msg', n.message), el('span', 'nav-notif-time', timeAgo(n.createdAt)));
+          a.addEventListener('click', async (e) => {
+            if (n.isRead) return;
+            e.preventDefault();
+            try { await api.post(`/notifications/${n.id}/read`); } catch { /* ไปต่อได้แม้ mark ไม่สำเร็จ */ }
+            location.href = a.href;
+          });
+          li.appendChild(a);
+          return li;
+        }));
+      } catch (err) {
+        list.replaceChildren(el('li', 'nav-notif-empty', err.message || 'โหลดการแจ้งเตือนไม่ได้'));
+      }
+    }
+
+    readAll.addEventListener('click', async () => {
+      try {
+        await api.post('/notifications/read-all');
+        setUnread(0);
+        load();
+      } catch (err) {
+        list.prepend(el('li', 'nav-notif-empty', err.message));
+      }
+    });
+    btn.addEventListener('click', () => setOpen(panel.hidden));
+    document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) setOpen(false); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) { setOpen(false); btn.focus(); } });
+
+    wrap.append(btn, panel);
     return wrap;
   }
 

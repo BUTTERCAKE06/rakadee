@@ -4,7 +4,7 @@
 
 ## โปรเจกต์
 
-Rakadee เว็บประมูลสินค้าออนไลน์ (งานรายวิชา CSI204) ทีม 4 คน แต่ละคนดูแลโมดูลของตัวเองทั้ง FE และ BE
+Rakadee เว็บประมูลสินค้าออนไลน์ (งานรายวิชา CSI400) ทีม 4 คน แต่ละคนดูแลโมดูลของตัวเองทั้ง FE และ BE
 
 - Front-end: HTML / CSS / JavaScript ธรรมดา (ไม่มี framework, ไม่มี build step)
 - Back-end: Node.js + Express (CommonJS `require`)

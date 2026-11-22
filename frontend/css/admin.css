@@ -15,6 +15,9 @@
 .admin-nav a:hover { opacity: 1; text-decoration: none; background: color-mix(in srgb, var(--color-surface) 8%, transparent); }
 .admin-nav a.active { opacity: 1; font-weight: 600; background: color-mix(in srgb, var(--color-surface) 16%, transparent); }
 .admin-nav span.is-disabled { opacity: .35; cursor: not-allowed; }
+.admin-back { display: block; margin: 8px 12px 16px; padding: 9px 10px; border-radius: 6px; font-size: 14px; color: var(--color-surface);
+  opacity: .72; border-top: 1px solid color-mix(in srgb, var(--color-surface) 16%, transparent); }
+.admin-back:hover { opacity: 1; text-decoration: none; background: color-mix(in srgb, var(--color-surface) 8%, transparent); }
 
 /* Main + Topbar */
 .admin-main { flex: 1; min-width: 0; }
@@ -61,4 +64,5 @@
   .admin-nav a, .admin-nav span { white-space: nowrap; }
   .admin-topbar { padding: 10px 16px; }
   .admin-content { padding: 16px 16px 32px; }
+  .admin-back { display: none; } /* มือถือใช้ "กลับหน้าเว็บ" ในเมนูอีเมลแทน */
 }

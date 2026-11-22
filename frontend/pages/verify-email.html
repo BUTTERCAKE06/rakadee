@@ -8,8 +8,8 @@
   <style>
     .auth-container { max-width: 480px; margin: 48px auto; text-align: center; }
     .card-figma {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
       border-radius: 16px;
       padding: 32px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -17,12 +17,12 @@
     .logo-badge {
       width: 40px;
       height: 40px;
-      background: #103ba1;
+      background: var(--color-primary-dark);
       border-radius: 10px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: #ffffff;
+      color: var(--color-surface);
       font-weight: 700;
       font-size: 22px;
       margin-bottom: 12px;
@@ -33,8 +33,8 @@
       justify-content: center;
       width: 100%;
       height: 44px;
-      background: #1d4ed8;
-      color: #ffffff;
+      background: var(--color-primary);
+      color: var(--color-surface);
       border: none;
       border-radius: 8px;
       font-size: 15px;
@@ -44,25 +44,25 @@
       transition: background-color 0.15s;
     }
     .btn-figma-primary:hover {
-      background: #1e40af;
-      color: #ffffff;
+      background: var(--color-primary-dark);
+      color: var(--color-surface);
       text-decoration: none;
     }
     .btn-figma-secondary {
       padding: 8px 16px;
       border-radius: 8px;
-      border: 1.5px solid #e2e8f0;
-      background: #ffffff;
-      color: #0f172a;
+      border: 1.5px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.15s;
     }
     .btn-figma-secondary:hover:not(:disabled) {
-      border-color: #1d4ed8;
-      color: #1d4ed8;
-      background: #eff6ff;
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
     }
     .hidden { display: none !important; }
   </style>
@@ -74,22 +74,22 @@
     <div class="auth-container">
       <div class="card-figma">
         <div class="logo-badge">R</div>
-        <h2 style="margin: 0; font-size: 24px; color: #0f172a;">ยืนยันที่อยู่อีเมล</h2>
+        <h2 style="margin: 0; font-size: 24px; color: var(--color-text);">ยืนยันที่อยู่อีเมล</h2>
 
         <div id="alert-box" class="alert hidden" style="margin-top: 16px;"></div>
 
-        <div id="loading" style="padding: 24px; color: #64748b;">
+        <div id="loading" style="padding: 24px; color: var(--color-muted);">
           กำลังตรวจสอบความถูกต้องของโทเคน...
         </div>
 
         <div id="success-box" class="hidden" style="margin-top: 20px;">
-          <p style="font-size: 15px; color: #334155; margin-bottom: 24px;">
+          <p style="font-size: 15px; color: var(--color-text); margin-bottom: 24px;">
             ที่อยู่อีเมลของคุณได้รับการยืนยันเรียบร้อยแล้ว
           </p>
           <a href="/pages/login.html" class="btn-figma-primary">เข้าสู่ระบบ</a>
         </div>
 
-        <div id="resend-box" class="hidden" style="margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+        <div id="resend-box" class="hidden" style="margin-top: 24px; border-top: 1px solid var(--color-border); padding-top: 16px;">
           <p class="muted" style="font-size: 13.5px;">หากโทเคนหมดอายุ คุณสามารถขอรับลิงก์ยืนยันใหม่ได้:</p>
           <button id="btn-resend" class="btn-figma-secondary" style="margin-top: 8px;">ส่งอีเมลยืนยันอีกครั้ง</button>
         </div>

@@ -573,8 +573,6 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | `LISTING_APPROVED`, `LISTING_REJECTED` | auction | ผู้ขาย | เว็บ + อีเมล |
 | `OUTBID`, `AUCTION_EXTENDED`, `AUCTION_ENDING_SOON` | auction | ผู้บิด / Watchlist | เว็บ + อีเมล |
 | `AUCTION_WON`, `AUCTION_LOST` | auction | ผู้ชนะ / ผู้แพ้ / ผู้ขาย | เว็บ + อีเมล |
-
-ข้อมูลที่ส่งให้ `notify()`: ราคาใช้ `amount` (รับ `currentPrice`, `price`, `finalPrice` ด้วย) · แจ้งผู้ขายตอนปิดประมูลใช้ `AUCTION_WON` (ขายได้) หรือ `AUCTION_LOST` (ไม่มีผู้ชนะ) พร้อม `forSeller: true` และ `result` (`no_bid` / `below_reserve`) · ระยะ "ใกล้หมดเวลา" อ่านจาก `time.endingSoonMs`
 | `PAYMENT_DUE_SOON`, `PAYMENT_SUCCESS`, `FUNDS_RELEASED`, `REFUNDED` | finance | ผู้ซื้อ / ผู้ขาย | เว็บ + อีเมล |
 | `SHIPPED`, `SHIP_OVERDUE` | shipping | ผู้ซื้อ | เว็บ + อีเมล |
 | `ORDER_PAID`, `SHIP_DUE_SOON`, `ORDER_CANCELLED` | shipping | ผู้ขาย | เว็บ + อีเมล |
@@ -583,6 +581,8 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | `DISPUTE_RESOLVED` | - | ผู้ซื้อ, ผู้ขาย (9.6) | เว็บ + อีเมล (ไม่ปิดได้) |
 | `PENALTY_ISSUED` | - | ผู้ถูกลงโทษ (non_payment / no_shipment) | เว็บ + อีเมล (ไม่ปิดได้) |
 | `ACCOUNT_STATUS_CHANGED` | - | ผู้ใช้ที่แอดมินเปลี่ยนสถานะ / แบน (10.3, 10.4) | เว็บ + อีเมล (ไม่ปิดได้) |
+
+ข้อมูลที่ส่งให้ `notify()`: ราคาใช้ `amount` (รับ `currentPrice`, `price`, `finalPrice` ด้วย) · แจ้งผู้ขายตอนปิดประมูลใช้ `AUCTION_WON` (ขายได้) หรือ `AUCTION_LOST` (ไม่มีผู้ชนะ) พร้อม `forSeller: true` และ `result` (`no_bid` / `below_reserve`) · ระยะ "ใกล้หมดเวลา" อ่านจาก `time.endingSoonMs`
 
 **11.5** → `{ users: { total, newToday, pendingVerification, restricted }, sellers: { pendingReview }, listings: { active, pendingReview, endingWithinHour }, orders: { pendingPayment, paymentReview, awaitingShipment, shipped, completedToday }, money: { escrowHeld, feesCollected, gmvToday }, disputes: { open }, generatedAt }` ("วันนี้" นับตามเวลาไทย, `gmvToday` = ยอด `total_amount` ของ Order ที่แอดมินอนุมัติการชำระวันนี้)
 
@@ -597,10 +597,10 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 **11.8** → `{ settings: { platform_fee_percent: "5", platform_fee_min: "20", initial_wallet_credit: "10000", terms_version: "1.0", privacy_version: "1.0" }, items: [{ key, value, label, description, hint, updatedAt, updatedBy: { id, displayName } | null }] }`
 
 **11.9** `{ "settings": { "platform_fee_percent": "4.5" } }` (ส่งเฉพาะค่าที่แก้) → แบบเดียวกับ 11.8 + `changed: [key]` · `audit.log(SETTING_UPDATE, 'setting', 'system', { changes: { key: { from, to } } })` · Errors: `INVALID_SETTING` (400, `details: { key: เหตุผล }`)
-
-**11.10** → `{ percent: 5, min: 20 }` (ตัวเลข อ่านจาก `settings.feeConfig()`) ใช้แสดงผลเท่านั้น ค่าธรรมเนียมจริงคิดตอน `escrow.release()`
 - `platform_fee_percent` 0–100, `platform_fee_min` 0–100,000, `initial_wallet_credit` 0–1,000,000 (ทศนิยม ≤ 2) · `terms_version` / `privacy_version` รูปแบบ `1.0`
 - ค่าทั้งหมดอ่านผ่าน `services/settings.js` (`feeConfig()`, `initialCredit()`, `get(key)`) ห้าม hard-code · ค่าธรรมเนียมคิดตามค่าตั้ง ณ เวลา `escrow.release()` · เครดิตแรกเข้ามีผลกับบัญชีที่ยืนยัน OTP หลังบันทึก
+
+**11.10** → `{ percent: 5, min: 20 }` (ตัวเลข อ่านจาก `settings.feeConfig()`) ใช้แสดงผลเท่านั้น ค่าธรรมเนียมจริงคิดตอน `escrow.release()`
 
 **รายการ action ของ `audit.log()`:** `SELLER_APPROVE`, `SELLER_REJECT`, `LISTING_APPROVE`, `LISTING_REJECT`, `PAYMENT_APPROVE`, `PAYMENT_REJECT`, `DISPUTE_STATUS`, `DISPUTE_RESOLVE`, `USER_STATUS`, `USER_BAN`, `BLACKLIST_REVOKE`, `FLAG_REVIEW`, `SETTING_UPDATE`
 

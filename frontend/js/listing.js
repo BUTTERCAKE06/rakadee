@@ -316,6 +316,12 @@
       mode, amountText: el.input.value, minNext: minNext(), isLeader: viewer.isLeader, leaderMax: viewer.myMax,
     });
     if (!check.ok) { setMessage('error', check.error); el.input.focus(); return; }
+    // D-17: ราคาสูงผิดปกติ (>= 2 เท่าของราคาปัจจุบัน) ต้องกดยืนยันก่อนส่ง
+    if (A.needsBidConfirm({ amountSatang: check.satang, currentPrice: item.currentPrice, startPrice: item.startPrice })
+      && !(await confirmBigBid(mode, check.satang))) {
+      el.input.focus();
+      return;
+    }
     el.bidBtn.disabled = el.proxyBtn.disabled = true;
     try {
       const amount = A.satangToBaht(check.satang);
@@ -347,6 +353,25 @@
     if (!viewer.isLeader) viewer.myMax = null;
     paintAll();
     if (document.activeElement !== el.input) el.input.value = bahtInput(minNext());
+  }
+
+  // D-17 กล่องยืนยันราคาสูงผิดปกติ: ตัวเลขตัวใหญ่ + ราคาปัจจุบัน + ส่วนต่าง คืน true เมื่อกดยืนยัน
+  function confirmBigBid(mode, satang) {
+    const dialog = document.getElementById('bigbid-dialog');
+    const base = item.currentPrice == null ? item.startPrice : item.currentPrice;
+    document.getElementById('bigbid-title').textContent = mode === 'proxy' ? 'ยืนยันวงเงิน Proxy' : 'ยืนยันราคาที่เสนอ';
+    document.getElementById('bigbid-amount').textContent = A.formatMoney(satang);
+    document.getElementById('bigbid-base-label').textContent = item.currentPrice == null ? 'ราคาเริ่มต้น' : 'ราคาปัจจุบัน';
+    document.getElementById('bigbid-base').textContent = A.formatMoney(base);
+    document.getElementById('bigbid-diff').textContent = `+${A.formatMoney(satang - base)}`;
+    document.getElementById('bigbid-note').textContent = mode === 'proxy'
+      ? 'ระบบบิดแทนทีละขั้นเท่าที่จำเป็น ไม่ได้บิดเต็มวงเงินทันที แต่ถ้ามีผู้แข่งขัน ราคาอาจขึ้นไปถึงวงเงินนี้ได้ และลดหรือยกเลิกวงเงินไม่ได้'
+      : 'ราคานี้สูงกว่าราคาปัจจุบันตั้งแต่ 2 เท่าขึ้นไป ตรวจจำนวนศูนย์ให้ถูกต้อง การบิดเป็นข้อผูกพันและยกเลิกไม่ได้';
+    return new Promise((resolve) => {
+      dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), { once: true });
+      dialog.returnValue = '';
+      dialog.showModal();
+    });
   }
 
   function openBuyNow() {

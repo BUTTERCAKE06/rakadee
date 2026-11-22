@@ -241,7 +241,8 @@ async function notifyBidResult({ listingId, result, extendRecipientIds = [] }) {
   if (result.extended) {
     const endAt = new Date(result.endAt).toISOString();
     const unique = [...new Map(extendRecipientIds.map((id) => [String(id), id])).values()];
-    unique.forEach((id) => jobs.push(notify(id, EVENTS.AUCTION_EXTENDED, { listingId, endAt })));
+    const extendCount = result.extendCount; // PR #9: ข้อความ "ครั้งที่ n/10" ใช้ค่านี้
+    unique.forEach((id) => jobs.push(notify(id, EVENTS.AUCTION_EXTENDED, { listingId, endAt, extendCount })));
   }
 
   // บิด COMMIT ไปแล้ว แจ้งเตือนล้มต้องไม่ทำให้คำขอบิดล้ม: เก็บ log ไว้ดูแทน
@@ -492,19 +493,83 @@ async function closeListing(listingId) {
   emitToListing(listingId, 'auction:closed', { listingId, result, finalPrice: price, winnerId });
   if (result === 'has_winner') {
     await notifyClosed({ listingId, winnerId, orderId: created.orderId, price, sellerId: row.seller_id });
-  } else if (result === 'below_reserve') {
-    // ไม่ถึงราคาขั้นต่ำ: ผู้บิดสูงสุดไม่ได้ของ (แจ้งผู้ขาย: รอ PM เพิ่ม event ใน notify.js)
-    await safeNotify(L.currentBidderId, EVENTS.AUCTION_LOST, { listingId, result, finalPrice: price });
+  } else {
+    await notifyNoWinner({ listingId, result, price, sellerId: row.seller_id });
   }
   return { listingId, result };
 }
 
-// แจ้งผู้ชนะ (AUCTION_WON) และผู้บิดคนอื่น (AUCTION_LOST)
-// ผู้ขาย: ยังไม่มี event สำหรับผู้ขายใน notify.js (ต้องให้ PM เพิ่ม) จึงยังไม่ส่ง
-async function notifyClosed({ listingId, winnerId, orderId, price }) {
-  await safeNotify(winnerId, EVENTS.AUCTION_WON, { listingId, orderId, price });
+// มีผู้ชนะ (has_winner / buy_now): ผู้ชนะ AUCTION_WON, ผู้บิดคนอื่น AUCTION_LOST
+// ผู้ขายใช้ AUCTION_WON + forSeller: true (api-spec 11, PR #9) ราคาส่งเป็น amount
+async function notifyClosed({ listingId, winnerId, orderId, price, sellerId }) {
+  await safeNotify(winnerId, EVENTS.AUCTION_WON, { listingId, orderId, amount: price });
   const losers = (await bidderIds(listingId)).filter((id) => String(id) !== String(winnerId));
-  for (const id of losers) await safeNotify(id, EVENTS.AUCTION_LOST, { listingId, finalPrice: price });
+  for (const id of losers) await safeNotify(id, EVENTS.AUCTION_LOST, { listingId, result: 'has_winner', amount: price });
+  if (sellerId) await safeNotify(sellerId, EVENTS.AUCTION_WON, { listingId, orderId, amount: price, forSeller: true });
+}
+
+// ไม่มีผู้ชนะ (no_bid / below_reserve): ผู้บิดทุกคน AUCTION_LOST พร้อม result
+// ผู้ขายใช้ AUCTION_LOST + forSeller: true + result (api-spec 11, PR #9)
+async function notifyNoWinner({ listingId, result, price, sellerId }) {
+  if (result === 'below_reserve') {
+    for (const id of await bidderIds(listingId)) await safeNotify(id, EVENTS.AUCTION_LOST, { listingId, result, amount: price });
+  }
+  if (sellerId) await safeNotify(sellerId, EVENTS.AUCTION_LOST, { listingId, result, amount: price, forSeller: true });
+}
+
+/**
+ * แจ้งเตือน "ใกล้หมดเวลา" (AUCTION_ENDING_SOON) ระยะจาก time.endingSoonMs (api-spec 11, PR #9)
+ * เรียกจาก jobs/endingSoon.js ทุกรอบ scheduler
+ *
+ * - คนใน Watchlist: กันส่งซ้ำด้วย watchlists.ending_soon_notified_at (schema.sql)
+ *   จองแถวด้วย UPDATE ... WHERE ending_soon_notified_at IS NULL ก่อนส่ง จึงไม่ส่งซ้ำแม้ job ซ้อนกัน
+ * - คนที่เคยบิด (ที่ไม่ได้อยู่ใน Watchlist): schema ไม่มีคอลัมน์กันส่งซ้ำ จึงส่งเฉพาะสินค้าที่
+ *   "เพิ่งเข้าช่วงใกล้หมดเวลา" ระหว่างรอบก่อนถึงรอบนี้ (sinceMs) รอบแรกหลังเปิด server ไม่ส่งให้กลุ่มนี้
+ *   (Auto Extend ตั้ง end_at = เวลาบิด + 2 นาที ซึ่งยังอยู่ในช่วงเดิม จึงไม่ข้ามเข้าช่วงซ้ำ)
+ *
+ * @param {object} [p]
+ * @param {number|null} [p.sinceMs] เวลาที่รอบก่อนทำงาน (ms) null = รอบแรก
+ * @param {number} [p.nowMs]
+ * @returns {Promise<{ watchers: number, bidders: number }>}
+ */
+async function notifyEndingSoon({ sinceMs = null, nowMs = Date.now() } = {}) {
+  const now = new Date(nowMs);
+  const until = new Date(nowMs + time.endingSoonMs);
+  let watchers = 0;
+  let bidders = 0;
+
+  const [watchRows] = await db.query(
+    `SELECT w.id, w.user_id, w.listing_id
+       FROM watchlists w JOIN listings l ON l.id = w.listing_id
+      WHERE l.status = 'active' AND l.end_at > ? AND l.end_at <= ? AND w.ending_soon_notified_at IS NULL`,
+    [now, until],
+  );
+  for (const w of watchRows) {
+    const [res] = await db.query(
+      'UPDATE watchlists SET ending_soon_notified_at = UTC_TIMESTAMP() WHERE id = ? AND ending_soon_notified_at IS NULL',
+      [w.id],
+    );
+    if (res.affectedRows !== 1) continue; // รอบอื่นจองไปแล้ว
+    await safeNotify(w.user_id, EVENTS.AUCTION_ENDING_SOON, { listingId: w.listing_id });
+    watchers += 1;
+  }
+
+  if (sinceMs !== null && sinceMs < nowMs) {
+    const [listingRows] = await db.query(
+      `SELECT id FROM listings
+        WHERE status = 'active' AND end_at > ? AND end_at > ? AND end_at <= ?`,
+      [now, new Date(sinceMs + time.endingSoonMs), until],
+    );
+    for (const { id } of listingRows) {
+      const watching = new Set((await watcherIds(id)).map(String));
+      for (const userId of await bidderIds(id)) {
+        if (watching.has(String(userId))) continue; // ได้จาก Watchlist แล้ว
+        await safeNotify(userId, EVENTS.AUCTION_ENDING_SOON, { listingId: id });
+        bidders += 1;
+      }
+    }
+  }
+  return { watchers, bidders };
 }
 
 // แจ้งเตือนล้มต้องไม่ทำให้งานที่ COMMIT แล้วล้ม
@@ -523,6 +588,7 @@ module.exports = {
   getMyProxy,
   buyNow,
   closeListing,
+  notifyEndingSoon,
   toEngineListing,
   applyReserve,
   minNextBid,

@@ -10,13 +10,12 @@ const ADMIN_NAV = [
   { href: '/pages/admin/listings.html', label: 'สินค้า', ready: true, match: ['/pages/admin/listing-detail.html'] },
   // เพิ่มจากภาพ: คำแนะนำอาจารย์ข้อ 2 (D-18)
   { href: '/pages/admin/seller-applications.html', label: 'ตรวจร้านค้า', ready: true, match: ['/pages/admin/seller-application.html', '/pages/admin/sellers.html'] },
-  { href: '/pages/admin/auctions.html', label: 'การประมูล', ready: false, note: 'ยังไม่มีหน้าและ API สำหรับแอดมิน' },
+  // เมนู "การประมูล" และ "สิทธิ์" ในแบบ UI ซ่อนไว้ เพราะไม่อยู่ใน requirement 8.2 และ api-spec (ตัดสินโดย PM 22 พ.ย. 2569)
   { href: '/pages/admin/orders.html', label: 'คำสั่งซื้อ', ready: true },   // PM (API 8.7)
   { href: '/pages/admin/payments.html', label: 'การเงิน', ready: true },    // SA ตรวจสอบการชำระเงิน (API 7.8–7.11)
   { href: '/pages/admin/disputes.html', label: 'ข้อพิพาท', ready: true, match: ['/pages/admin/dispute-detail.html'] },
   // บิดน่าสงสัย (ข้อ 7.3, API 10.6) อยู่เป็นแท็บในหน้าผู้ใช้
   { href: '/pages/admin/users.html', label: 'ผู้ใช้', ready: true, match: ['/pages/admin/suspicious-flags.html'] },
-  { href: '/pages/admin/roles.html', label: 'สิทธิ์', ready: false, note: 'ยังไม่มีหน้าและ API จัดการสิทธิ์แอดมิน' },
   { href: '/pages/admin/audit-logs.html', label: 'Audit Log', ready: true },
   { href: '/pages/admin/settings.html', label: 'ตั้งค่าระบบ', ready: true, superOnly: true },   // PM (API 11.8–11.9) เมนูขึ้นเฉพาะ Super Admin
 ];
@@ -57,8 +56,12 @@ function renderSidebar(user) {
     nav.appendChild(node);
   });
 
+  // กลับหน้าเว็บปกติ (คำแนะนำอาจารย์ข้อ 4: แอดมินกลับหน้าเว็บได้ เมนูไม่หาย — navbar หน้าเว็บมีลิงก์ "แอดมิน" กลับมา)
+  const back = mk('a', 'admin-back', '← กลับหน้าเว็บ');
+  back.href = '/';
+
   // ออกจากระบบย้ายไปอยู่ในเมนูอีเมลมุมขวาบน
-  side.replaceChildren(brand, nav);
+  side.replaceChildren(brand, nav, back);
 }
 
 function logout() {
@@ -82,7 +85,7 @@ function renderAccountMenu(user) {
   out.type = 'button';
   out.setAttribute('role', 'menuitem');
   out.addEventListener('click', logout);
-  menu.append(item('การแจ้งเตือน', '/pages/notifications.html'), item('ตั้งค่า', '/pages/settings.html'), out);
+  menu.append(item('การแจ้งเตือน', '/pages/notifications.html'), item('ตั้งค่า', '/pages/settings.html'), item('กลับหน้าเว็บ', '/'), out);
 
   const setOpen = (open) => { menu.hidden = !open; btn.setAttribute('aria-expanded', String(open)); };
   btn.addEventListener('click', (e) => { e.stopPropagation(); setOpen(menu.hidden); });

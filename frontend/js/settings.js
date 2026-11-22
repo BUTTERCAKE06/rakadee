@@ -86,6 +86,39 @@
     $('phone-status').textContent = me.phoneVerified ? 'ยืนยันแล้ว (Verified)' : 'ยังไม่ยืนยันเบอร์โทร';
     $('phone-status').className = me.phoneVerified ? 'badge-verified' : 'hint';
     renderAvatar();
+    loadPublicPreview();
+  }
+
+  // ตัวอย่างข้อมูลสาธารณะ (2.11) แสดงเฉพาะสมาชิก (แอดมินไม่มีหน้าโปรไฟล์สาธารณะ)
+  async function loadPublicPreview() {
+    const card = $('public-card');
+    if (!card || !isMember(me)) return;
+    const box = $('public-preview');
+    try {
+      const p = await api.get(`/users/${me.id}/public`);
+      const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+      const avatar = mk('span', 'avatar lg');
+      if (p.avatarUrl) { const img = mk('img'); img.src = p.avatarUrl; img.alt = ''; avatar.appendChild(img); }
+      else avatar.textContent = (p.displayName || '?').slice(0, 1).toUpperCase();
+      const info = mk('div', 'info');
+      info.append(mk('span', 'name', p.displayName));
+      const badges = mk('div', 'badges');
+      if (p.isSeller) badges.append(mk('span', 'badge', 'ผู้ขาย'));
+      if (p.emailVerified) badges.append(mk('span', 'badge badge-success', 'ยืนยันอีเมลแล้ว'));
+      if (p.phoneVerified) badges.append(mk('span', 'badge badge-success', 'ยืนยันเบอร์แล้ว'));
+      info.append(badges);
+      if (p.joinedAt) info.append(mk('span', 'hint', `สมาชิกตั้งแต่ ${new Date(p.joinedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })}`));
+      info.append(mk('p', 'bio', p.bio || 'ยังไม่มีคำแนะนำตัว'));
+      if (p.isSeller) {
+        const a = mk('a', '', 'ดูหน้าร้านแบบที่ผู้ซื้อเห็น');
+        a.href = `/pages/seller-profile.html?id=${p.id}`;
+        info.append(a);
+      }
+      box.replaceChildren(avatar, info);
+      card.hidden = false;
+    } catch {
+      card.hidden = true;
+    }
   }
 
   async function saveProfile(e) {
@@ -115,6 +148,7 @@
       const d = await api.upload('/users/me/avatar', fd);
       me.avatarUrl = d.avatarUrl;
       renderAvatar();
+      loadPublicPreview();
       alertMsg('success', 'เปลี่ยนรูปโปรไฟล์แล้ว');
     } catch (err) {
       handleError(err);
@@ -127,6 +161,7 @@
       await api.del('/users/me/avatar');
       me.avatarUrl = null;
       renderAvatar();
+      loadPublicPreview();
       alertMsg('success', 'ลบรูปโปรไฟล์แล้ว');
     } catch (err) {
       handleError(err);

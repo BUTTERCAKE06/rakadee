@@ -15,6 +15,9 @@
     .detail { color: var(--color-muted); font-size: 13px; overflow-wrap: anywhere; }
     .pager { display: flex; justify-content: center; gap: 8px; margin-top: 16px; align-items: center; }
     [hidden] { display: none !important; }
+    .sort-btn { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; }
+    .sort-btn:hover { color: var(--color-primary); }
+    .sort-btn .arrow { font-size: 11px; color: var(--color-primary); }
   </style>
 </head>
 <body class="admin-page">
@@ -51,7 +54,12 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>วัน-เวลา</th><th>แอดมิน</th><th>การกระทำ</th><th>เป้าหมาย</th><th>IP</th></tr>
+            <tr>
+              <th aria-sort="descending"><button type="button" class="sort-btn" data-sort="time">วัน-เวลา <span class="arrow">▼</span></button></th>
+              <th><button type="button" class="sort-btn" data-sort="admin">แอดมิน <span class="arrow"></span></button></th>
+              <th><button type="button" class="sort-btn" data-sort="action">การกระทำ <span class="arrow"></span></button></th>
+              <th>เป้าหมาย</th><th>IP</th>
+            </tr>
           </thead>
           <tbody id="rows"></tbody>
         </table>

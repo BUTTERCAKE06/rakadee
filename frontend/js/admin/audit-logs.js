@@ -1,5 +1,6 @@
 // Audit Log (api-spec 11.7, requirement 8.2-6) — เจ้าของ: PM
 // Admin เห็นเฉพาะของตัวเอง, Super Admin เห็นทั้งหมดและกรองตามแอดมินได้ (requirement 8.1)
+// กดหัวตาราง วัน-เวลา / แอดมิน / การกระทำ เพื่อเรียง (sort=newest|oldest|admin|action)
 (() => {
   const $ = (id) => document.getElementById(id);
   const ACTION_LABEL = {
@@ -18,7 +19,21 @@
     SETTING_UPDATE: 'แก้ตั้งค่าระบบ',
   };
   const TARGET_LABEL = { listing: 'สินค้า', order: 'คำสั่งซื้อ', payment: 'การชำระเงิน', user: 'ผู้ใช้', dispute: 'ข้อพิพาท', setting: 'ตั้งค่า' };
-  const state = { page: 1, limit: 20, filters: {}, filtersLoaded: false };
+  const state = { page: 1, limit: 20, filters: {}, filtersLoaded: false, sort: 'newest' };
+
+  // กดหัวคอลัมน์: วัน-เวลา สลับ ใหม่→เก่า / เก่า→ใหม่, แอดมินและการกระทำเรียง ก→ฮ
+  function setSort(key) {
+    if (key === 'time') state.sort = state.sort === 'newest' ? 'oldest' : 'newest';
+    else state.sort = key;
+    document.querySelectorAll('.sort-btn').forEach((b) => {
+      const k = b.dataset.sort;
+      const active = (k === 'time' && (state.sort === 'newest' || state.sort === 'oldest')) || k === state.sort;
+      b.querySelector('.arrow').textContent = !active ? '' : (state.sort === 'oldest' ? '▲' : (k === 'time' ? '▼' : '▲'));
+      b.parentElement.setAttribute('aria-sort', !active ? 'none' : (state.sort === 'newest' ? 'descending' : 'ascending'));
+    });
+    state.page = 1;
+    load();
+  }
 
   function showError(message) {
     const box = $('alert');
@@ -111,7 +126,7 @@
   }
 
   async function load() {
-    const q = new URLSearchParams({ page: state.page, limit: state.limit });
+    const q = new URLSearchParams({ page: state.page, limit: state.limit, sort: state.sort });
     Object.entries(state.filters).forEach(([k, v]) => { if (v) q.set(k, v); });
     try {
       render(await api.get(`/admin/audit-logs?${q}`));
@@ -137,6 +152,7 @@
       state.page = 1;
       load();
     });
+    document.querySelectorAll('.sort-btn').forEach((b) => b.addEventListener('click', () => setSort(b.dataset.sort)));
     $('filters').addEventListener('reset', () => {
       state.filters = {};
       state.page = 1;

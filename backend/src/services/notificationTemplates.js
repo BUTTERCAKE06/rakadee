@@ -126,6 +126,12 @@ const TEMPLATES = {
     message: (d) => `คำสั่งซื้อ ${order(d)}${d.trackingNumber ? ` เลขพัสดุ ${d.trackingNumber}` : ''}${d.carrier ? ` (${d.carrier})` : ''} ได้รับแล้วกดยืนยันรับสินค้า ไม่กดภายใน ${Math.round(time.autoReleaseMs / 86400000)} วันระบบปล่อยเงินให้ผู้ขายอัตโนมัติ`,
     link: orderLink,
   },
+  ORDER_PAID: {
+    group: 'shipping',
+    title: () => 'ผู้ซื้อชำระเงินแล้ว กรุณาจัดส่ง',
+    message: (d) => `คำสั่งซื้อ ${order(d)} ชำระเงินสำเร็จ เงินพักไว้ที่ระบบ กรุณาจัดส่งและบันทึกเลขพัสดุ${d.shipDueAt ? `ก่อน ${thaiTime(d.shipDueAt)}` : `ภายใน ${hours(time.shippingDueMs)} ชม.`}`,
+    link: (d) => (d.orderId ? `/pages/orders.html?id=${d.orderId}#ship` : null),
+  },
   SHIP_DUE_SOON: {
     group: 'shipping',
     title: () => 'ใกล้ครบกำหนดจัดส่ง',

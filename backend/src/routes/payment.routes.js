@@ -15,4 +15,10 @@ router.post(
   asyncHandler(paymentController.uploadSlip)
 );
 
+router.get(
+  '/:id/slip',
+  requireAuth,
+  asyncHandler(paymentController.getSlip)
+);
+
 module.exports = router;

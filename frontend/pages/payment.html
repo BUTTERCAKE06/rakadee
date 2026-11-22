@@ -275,7 +275,9 @@
 
         document.getElementById('order-subtitle').textContent = `คำสั่งซื้อ #ORD-${data.orderId}`;
         document.getElementById('item-title').textContent = data.listing.title;
-        document.getElementById('item-cover').src = data.listing.coverUrl || '/images/placeholder.png';
+        const cover = document.getElementById('item-cover');
+        if (data.listing.coverUrl) cover.src = data.listing.coverUrl;
+        else cover.removeAttribute('src');
         document.getElementById('closing-type-badge').textContent = data.mode === 'buy_now' ? 'ซื้อทันที (Buy Now)' : 'ชนะการประมูล';
 
         document.getElementById('price-item').textContent = `฿${formatNumber(data.itemPrice)}`;
@@ -306,12 +308,7 @@
           btnChangeAddr.classList.add('hidden');
           slipCard.classList.remove('hidden');
 
-          if (lp.slipUrl) {
-            document.getElementById('slip-preview-box').classList.remove('hidden');
-            document.getElementById('slip-img').src = lp.slipUrl;
-            document.getElementById('slip-link').href = lp.slipUrl;
-            document.getElementById('slip-open-btn').href = lp.slipUrl;
-          }
+          if (lp.slipUrl) showSlip(lp.slipUrl);
         } else if (lp && lp.status === 'success') {
           // อนุมัติแล้ว
           renderTimer(null, true);
@@ -377,6 +374,19 @@
       }
     });
 
+    // สลิปเปิดผ่าน API ที่ต้องแนบ token จึงโหลดเป็น Blob แล้วแสดง (เปิดลิงก์ตรงไม่ได้)
+    async function showSlip(apiUrl) {
+      try {
+        const url = URL.createObjectURL(await api.blob(apiUrl.replace(/^\/api/, '')));
+        document.getElementById('slip-preview-box').classList.remove('hidden');
+        document.getElementById('slip-img').src = url;
+        document.getElementById('slip-link').href = url;
+        document.getElementById('slip-open-btn').href = url;
+      } catch (err) {
+        showAlert(err.message || 'เปิดรูปสลิปไม่ได้');
+      }
+    }
+
     // กดชำระเงินด้วย Wallet พร้อมสลิป
     document.getElementById('btn-submit-pay').addEventListener('click', async () => {
       const fileInput = document.getElementById('pay-slip-file');
@@ -393,16 +403,13 @@
       btn.textContent = 'กำลังดำเนินการ...';
 
       try {
-        const payRes = await api.post(`/orders/${orderId}/pay`, {});
-        const paymentId = payRes.paymentId;
-
-        // อัปโหลดสลิปที่แนบไว้ทันที (บังคับไฟล์, ref ไม่บังคับ)
+        // ชำระและแนบสลิปในคำขอเดียว (สลิปบังคับ) ถ้าไม่สำเร็จจะไม่ถูกหักเงิน
         const fd = new FormData();
         fd.append('slip', fileInput.files[0]);
         const ref = document.getElementById('pay-slip-ref').value.trim();
         if (ref) fd.append('slipReference', ref);
 
-        await api.upload(`/payments/${paymentId}/slip`, fd);
+        await api.upload(`/orders/${orderId}/pay`, fd);
 
         showAlert('ชำระเงินและแนบสลิปเรียบร้อยแล้ว ขณะนี้อยู่ระหว่างรอแอดมินตรวจสอบ', false);
         loadPaymentDetails();
@@ -439,10 +446,7 @@
       try {
         const res = await api.upload(`/payments/${orderData.latestPayment.id}/slip`, fd);
         alert('อัปเดตสลิปเรียบร้อยแล้ว');
-        document.getElementById('slip-preview-box').classList.remove('hidden');
-        document.getElementById('slip-img').src = res.slipUrl;
-        document.getElementById('slip-link').href = res.slipUrl;
-        document.getElementById('slip-open-btn').href = res.slipUrl;
+        showSlip(res.slipUrl);
       } catch (err) {
         alert(err.message || 'อัปโหลดสลิปไม่สำเร็จ');
       } finally {

@@ -220,6 +220,7 @@ CREATE TABLE listings (
   result             ENUM('has_winner','no_bid','below_reserve','buy_now') NULL,
   winner_id          BIGINT UNSIGNED NULL,
   closed_at          DATETIME NULL,
+  ending_soon_notified_at DATETIME NULL,          -- แจ้งผู้เคยบิดว่า "ใกล้หมดเวลา" แล้ว (ครั้งเดียวต่อสินค้า คนใน Watchlist ใช้ watchlists.ending_soon_notified_at)
   created_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),

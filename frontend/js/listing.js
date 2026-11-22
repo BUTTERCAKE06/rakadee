@@ -366,7 +366,7 @@
     document.getElementById('bigbid-diff').textContent = `+${A.formatMoney(satang - base)}`;
     document.getElementById('bigbid-note').textContent = mode === 'proxy'
       ? 'ระบบบิดแทนทีละขั้นเท่าที่จำเป็น ไม่ได้บิดเต็มวงเงินทันที แต่ถ้ามีผู้แข่งขัน ราคาอาจขึ้นไปถึงวงเงินนี้ได้ และลดหรือยกเลิกวงเงินไม่ได้'
-      : 'ราคานี้สูงกว่าราคาปัจจุบันตั้งแต่ 2 เท่าขึ้นไป ตรวจจำนวนศูนย์ให้ถูกต้อง การบิดเป็นข้อผูกพันและยกเลิกไม่ได้';
+      : `ราคานี้สูงกว่า${item.currentPrice == null ? 'ราคาเริ่มต้น' : 'ราคาปัจจุบัน'}ตั้งแต่ ${A.BID_CONFIRM_MULTIPLIER} เท่าขึ้นไป ตรวจจำนวนศูนย์ให้ถูกต้อง การบิดเป็นข้อผูกพันและยกเลิกไม่ได้`;
     return new Promise((resolve) => {
       dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), { once: true });
       dialog.returnValue = '';

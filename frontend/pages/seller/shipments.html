@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>รายการรอจัดส่ง | Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/orders.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container account-layout">
+    <aside class="account-nav" id="account-nav"></aside>
+
+    <section>
+      <h1 class="page-title">รายการรอจัดส่ง</h1>
+      <p class="muted">ต้องบันทึกการจัดส่งภายในกำหนด ไม่ส่งตามกำหนดผู้ซื้อยกเลิกได้และบัญชีจะถูกจำกัดสิทธิ์การลงสินค้า</p>
+      <div id="alert"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>คำสั่งซื้อ</th><th>สินค้า</th><th>ชำระสำเร็จ</th><th>กำหนดส่ง</th><th>ผู้รับ</th><th>ค่าส่ง</th><th></th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/account-nav.js"></script>
+  <script src="/js/order-view.js"></script>
+  <script src="/js/seller/shipments.js"></script>
+</body>
+</html>

@@ -128,9 +128,12 @@
     menu.hidden = true;
     if (isMember(user)) {
       ACCOUNT_LINKS.forEach((l) => menu.appendChild(link(l.href, l.label)));
-      menu.appendChild(user.isSeller
-        ? link('/pages/seller/listings.html', 'ร้านของฉัน')
-        : link('/pages/seller/open-shop.html', 'เปิดสิทธิ์ผู้ขาย'));
+      if (user.isSeller) {
+        menu.appendChild(link('/pages/seller/listings.html', 'ร้านของฉัน'));
+        menu.appendChild(link('/pages/seller/shipments.html', 'รอจัดส่ง'));
+      } else {
+        menu.appendChild(link('/pages/seller/open-shop.html', 'เปิดสิทธิ์ผู้ขาย'));
+      }
     }
     if (isAdmin(user)) {
       menu.appendChild(link('/pages/admin/dashboard.html', 'ระบบแอดมิน'));

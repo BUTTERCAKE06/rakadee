@@ -11,6 +11,7 @@ const time = {
   paymentReminderMs: minutes('PAYMENT_REMINDER_MINUTES', 24 * 60) * MIN, // แจ้งเตือนเมื่อผ่านไป 24 ชม.
   adminPaymentReviewMs: minutes('ADMIN_REVIEW_MINUTES', 24 * 60) * MIN, // แอดมินตรวจภายใน 24 ชม.
   shippingDueMs: minutes('SHIPPING_DUE_MINUTES', 72 * 60) * MIN, // ผู้ขายส่งภายใน 72 ชม.
+  shipReminderBeforeMs: minutes('SHIP_REMINDER_MINUTES', 24 * 60) * MIN, // เตือนผู้ขายเมื่อเหลือ 24 ชม. ก่อนครบกำหนดส่ง
   autoReleaseMs: minutes('AUTO_RELEASE_MINUTES', 7 * 24 * 60) * MIN, // ปล่อยเงินเมื่อครบ 7 วัน
   suspendMs: minutes('SUSPEND_MINUTES', 7 * 24 * 60) * MIN, // ระงับชั่วคราว 7 วัน
   autoExtendMs: minutes('AUTO_EXTEND_MINUTES', 2) * MIN, // Auto Extend 2 นาที

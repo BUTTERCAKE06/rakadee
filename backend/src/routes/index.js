@@ -24,7 +24,7 @@ router.use('/listings', require('./listing.routes'));       // QA: 4.2–4.8  + 
 router.use('/admin', require('./admin.listing.routes'));    // QA: 4.10–4.13 (admin listings)
 router.get('/sellers/:userId', require('../controllers/seller.controller').getPublicProfile); // 3.4 public + Promgrammer (ดึง api นี้ไปใช้ทำ FE หน้าโปรไฟล์ผู้ขายแบบสาธารณะ)
 router.use('/', require('./auction.routes'));                 // Programmer: 5.1–5.7, 6.1–6.7 (route ทั้งหมดอยู่ใน auction.routes.js)
-// router.use('/orders', require('./order.routes'));       // PM (จัดส่ง)
+router.use('/', require('./order.routes'));                   // PM: 8.1–8.8 คำสั่งซื้อและการจัดส่ง
 // router.use('/disputes', require('./dispute.routes'));   // QA
 router.use('/notifications', require('./notification.routes')); // PM: 11.1–11.4
 router.use('/users', require('./user.routes'));                 // PM: 2.1–2.11

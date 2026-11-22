@@ -423,6 +423,11 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | 8.5 | POST | `/api/orders/:id/confirm-receipt` | ผู้ซื้อของ Order (`pay`) | ยืนยันรับสินค้า → ปล่อยเงิน |
 | 8.6 | POST | `/api/orders/:id/cancel` | ผู้ซื้อของ Order | ขอยกเลิกเมื่อผู้ขายไม่ส่งเกินกำหนด |
 | 8.7 | GET | `/api/admin/orders` | admin | ค้นหาคำสั่งซื้อทั้งหมด |
+| 8.8 | GET | `/api/orders/:id/shipment/proof` | ผู้ซื้อ/ผู้ขายของ Order, admin | ไฟล์หลักฐานการจัดส่ง (ไม่ใช่ JSON) |
+
+**OrderSummary (8.1, 8.7)** = `{ id, status, closingType, listing: { id, title, coverUrl }, buyer: { id, displayName }, seller: { id, displayName }, itemPrice, shippingFee, totalAmount, paymentStatus, disputeStatus, paymentDueAt, shipDueAt, autoReleaseAt, createdAt }` (`paymentStatus` / `disputeStatus` = สถานะของรายการล่าสุด หรือ `null`)
+
+**8.1** → `{ items: [OrderSummary], page, limit, total, counts: { pending_payment, awaiting_shipment, shipped, completed, disputed, cancelled } }` (`counts` ไม่ขึ้นกับ `status` ที่กรอง ใช้ทำตัวเลขบนแท็บ)
 
 **OrderDetail (8.2)**
 
@@ -441,21 +446,27 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 ```
 
 - `canCancel` = ผู้ซื้อ + `awaiting_shipment` + เลย `ship_due_at` · `canConfirmReceipt` = ผู้ซื้อ + `shipped` · `canOpenDispute` = ผู้ซื้อ + (`awaiting_shipment` หรือ `shipped`) + escrow `held` + ไม่มีข้อพิพาทเปิดอยู่
+- เพิ่มเติม: `viewerRole` (`buyer|seller|admin`), `canShip` (ผู้ขาย + `awaiting_shipment` + ไม่มีข้อพิพาทเปิด), `canPay` (ผู้ซื้อ + `pending_payment` + ไม่มี payment `pending_review` + ยังไม่เลย `payment_due_at`), `shipOverdue`, `paidAt`, `shippedAt`, `completedAt`, `cancelledAt`, `cancelReason`, `serverTime` (ใช้ทำ countdown), `shipment.carrierLabel`, `shipment.proofUrl` (= 8.8 หรือ `null`), `escrow.feeAmount` / `escrow.netAmount`
+- `canCancel`, `canConfirmReceipt` เป็น `false` เมื่อมีข้อพิพาทเปิดอยู่ · `shippingAddress` เป็น `null` สำหรับผู้ขายจนกว่าจะชำระเงินสำเร็จ (`paid_at`)
+- `timeline[].event` ∈ `order_created, payment_submitted, payment_rejected, paid, shipped, dispute_opened, dispute_resolved, funds_released, refunded, completed, cancelled` (บางรายการมี `note` เช่นเหตุผลที่ปฏิเสธ / `cancel_reason`) เรียงตามเวลา
+- คนที่ไม่ใช่ผู้ซื้อ ผู้ขาย หรือแอดมิน ได้ `NOT_FOUND`
 
-**8.3** → `{ items: [{ orderId, listingTitle, paidAt, shipDueAt, remainingSec, recipient: {...shippingAddress}, shippingFee, disputeStatus }] }` (ข้อ 6.5 ครบ 8 ฟิลด์) เรียงใกล้ครบกำหนดก่อน
+**8.3** → `{ items: [{ orderId, listingTitle, coverUrl, buyer: { id, displayName }, paidAt, shipDueAt, remainingSec, overdue, recipient: {...shippingAddress}, closingType, shippingFee, disputeStatus }], serverTime }` (ข้อ 6.5 ครบ 8 ฟิลด์) เรียงใกล้ครบกำหนดก่อน
 
 **8.4** `{ "carrier": "flash", "carrierOther": null, "trackingNumber": "TH1234567890", "shippedAt": "2026-11-08T03:00:00Z", "note": "..." }` + ไฟล์ `proof` (ไม่บังคับ)
-- `carrier` ∈ `thailand_post | kerry | flash | jt | other` (`other` ต้องมี `carrierOther`)
+- `carrier` ∈ `thailand_post | kerry | flash | jt | other` (`other` ต้องมี `carrierOther` ≤ 100 ตัว) · `trackingNumber` ตัวอังกฤษ/ตัวเลข/`-` 6–40 ตัว (เก็บเป็นตัวพิมพ์ใหญ่) · `shippedAt` ต้องไม่เป็นอนาคตและไม่ก่อน `paid_at` · `note` ≤ 500 · `proof` .jpg/.png เก็บที่ `storage/shipments/` เปิดผ่าน 8.8 เท่านั้น
 - ระบบ: Order `shipped`, `shipped_at`, `auto_release_at = now + time.autoReleaseMs`, `notify(buyer, SHIPPED)`
-- → `{ orderId, status: "shipped", autoReleaseAt }` · Errors: `INVALID_STATE` (ไม่ใช่ `awaiting_shipment`), `ORDER_CANCELLED`
+- 201 → `{ orderId, status: "shipped", autoReleaseAt }` · Errors: `VALIDATION_ERROR`, `INVALID_STATE` (ไม่ใช่ `awaiting_shipment`), `ORDER_CANCELLED`, `DISPUTE_OPEN` (409), `NOT_FOUND` (ไม่ใช่ผู้ขายของ Order)
 
 **8.5** → `escrow.release()` → `{ orderId, status: "completed", escrowStatus: "released" }` · Errors: `INVALID_STATE`, `DISPUTE_OPEN` (409)
 
-**8.6** `{ "reason": "ผู้ขายไม่ส่งของ" }` → Order `cancelled` (`seller_no_shipment`) + `escrow.refund()` + `penalty.add(seller, 'no_shipment', { orderId })` → `{ orderId, status: "cancelled", refundAmount }` · Errors: `CANCEL_NOT_ALLOWED` (409 ยังไม่เลยกำหนด)
+**8.6** `{ "reason": "ผู้ขายไม่ส่งของ" }` (ไม่บังคับ ใช้เป็น note ของบทลงโทษ) → ใน transaction: Order `cancelled` (`seller_no_shipment`) + `escrow.refund()` → หลัง COMMIT: `penalty.add(seller, 'no_shipment', { orderId, note })` + `notify(seller, ORDER_CANCELLED)` → `{ orderId, status: "cancelled", refundAmount }` · Errors: `CANCEL_NOT_ALLOWED` (409 ยังไม่เลยกำหนด, `details: { shipDueAt }`), `INVALID_STATE`, `DISPUTE_OPEN`
 
-**8.7** query `status`, `q` (รหัส Order / ชื่อสินค้า / ผู้ใช้), `page` → รายการ `OrderDetail` แบบย่อ
+**8.7** query `status`, `q` (รหัส Order เช่น `12` / `ORD-12`, ชื่อสินค้า, username / ชื่อที่แสดงของผู้ซื้อหรือผู้ขาย, ชื่อร้าน), `page` → `{ items: [OrderSummary], page, limit, total }`
 
-**Scheduler (PM):** `shippingDeadline` แจ้งเตือนผู้ขายเมื่อเหลือ 24 ชม. ก่อน `ship_due_at` และแจ้งผู้ซื้อว่ายกเลิกได้เมื่อเลยกำหนด · `autoRelease` เมื่อ `status = shipped AND auto_release_at <= now AND ไม่มีข้อพิพาทเปิด` → `escrow.release()` + Order `completed`
+**8.8** ส่งไฟล์รูปตรง (Content-Type ของรูป) ตรวจสิทธิ์เหมือน 8.2 · Errors: `NOT_FOUND`
+
+**Scheduler (PM):** `shippingDeadline` แจ้งเตือนผู้ขาย (`SHIP_DUE_SOON`) ครั้งเดียวเมื่อเหลือ `time.shipReminderBeforeMs` (24 ชม.) ก่อน `ship_due_at` (บันทึก `ship_reminded_at`) และแจ้งผู้ซื้อ (`SHIP_OVERDUE`) ครั้งเดียวว่ายกเลิกได้เมื่อเลยกำหนด (บันทึก `ship_overdue_notified_at`) · `autoRelease` เมื่อ `status = shipped AND auto_release_at <= now AND ไม่มีข้อพิพาทเปิด` → `escrow.release()` + Order `completed`
 
 ---
 
@@ -548,7 +559,8 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 
 ข้อมูลที่ส่งให้ `notify()`: ราคาใช้ `amount` (รับ `currentPrice`, `price`, `finalPrice` ด้วย) · แจ้งผู้ขายตอนปิดประมูลใช้ `AUCTION_WON` (ขายได้) หรือ `AUCTION_LOST` (ไม่มีผู้ชนะ) พร้อม `forSeller: true` และ `result` (`no_bid` / `below_reserve`) · ระยะ "ใกล้หมดเวลา" อ่านจาก `time.endingSoonMs`
 | `PAYMENT_DUE_SOON`, `PAYMENT_SUCCESS`, `FUNDS_RELEASED`, `REFUNDED` | finance | ผู้ซื้อ / ผู้ขาย | เว็บ + อีเมล |
-| `SHIPPED` | shipping | ผู้ซื้อ | เว็บ + อีเมล |
+| `SHIPPED`, `SHIP_OVERDUE` | shipping | ผู้ซื้อ | เว็บ + อีเมล |
+| `SHIP_DUE_SOON`, `ORDER_CANCELLED` | shipping | ผู้ขาย | เว็บ + อีเมล |
 | `DISPUTE_OPENED` | shipping | ผู้ขาย, แอดมิน | เว็บ + อีเมล |
 
 **11.5** → `{ users: { total, newToday, pendingVerification, restricted }, sellers: { pendingReview }, listings: { active, pendingReview, endingWithinHour }, orders: { pendingPayment, paymentReview, awaitingShipment, shipped, completedToday }, money: { escrowHeld, feesCollected, gmvToday }, disputes: { open }, generatedAt }` ("วันนี้" นับตามเวลาไทย, `gmvToday` = ยอด `total_amount` ของ Order ที่แอดมินอนุมัติการชำระวันนี้)

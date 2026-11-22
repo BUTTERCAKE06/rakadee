@@ -6,13 +6,13 @@
   <title>เข้าสู่ระบบ - Rakadee</title>
   <link rel="stylesheet" href="/css/main.css">
   <style>
-    /* ปรับแต่ง */
+    /* ปรับแต่งตามธีมกลาง css/main.css */
     .auth-container { max-width: 440px; margin: 48px auto; }
     
     .card-figma {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 16px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: calc(var(--radius) * 2);
       padding: 32px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
@@ -20,12 +20,12 @@
     .logo-badge {
       width: 40px;
       height: 40px;
-      background: #103ba1;
-      border-radius: 10px;
+      background: var(--color-primary-dark);
+      border-radius: var(--radius);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: #ffffff;
+      color: var(--color-surface);
       font-weight: 700;
       font-size: 22px;
       margin-bottom: 16px;
@@ -34,38 +34,38 @@
     .form-group label {
       font-size: 14px;
       font-weight: 600;
-      color: #0f172a;
+      color: var(--color-text);
       margin-bottom: 6px;
     }
 
     .input-figma {
       width: 100%;
       padding: 10px 14px;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
       font-size: 15px;
-      color: #0f172a;
+      color: var(--color-text);
       outline: none;
       transition: all 0.15s ease;
-      background: #ffffff;
+      background: var(--color-surface);
       box-sizing: border-box;
     }
     .input-figma:focus {
-      border-color: #1d4ed8;
+      border-color: var(--color-primary);
       box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
     }
     .input-figma.error {
-      border-color: #dc2626;
+      border-color: var(--color-danger);
       box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
     }
 
     .btn-figma-primary {
       width: 100%;
       height: 44px;
-      background: #1d4ed8;
-      color: #ffffff;
+      background: var(--color-primary);
+      color: var(--color-surface);
       border: none;
-      border-radius: 8px;
+      border-radius: var(--radius);
       font-size: 15px;
       font-weight: 500;
       cursor: pointer;
@@ -75,7 +75,7 @@
       justify-content: center;
     }
     .btn-figma-primary:hover:not(:disabled) {
-      background: #1e40af;
+      background: var(--color-primary-dark);
     }
     .btn-figma-primary:disabled {
       opacity: 0.5;
@@ -93,7 +93,7 @@
       <div class="card-figma">
         <div style="text-align: center; margin-bottom: 24px;">
           <div class="logo-badge">R</div>
-          <h2 style="margin: 0; font-size: 24px; color: #0f172a;">เข้าสู่ระบบ</h2>
+          <h2 style="margin: 0; font-size: 24px; color: var(--color-text);">เข้าสู่ระบบ</h2>
           <p class="muted" style="margin: 6px 0 0; font-size: 14px;">เข้าสู่ระบบ Rakadee เพื่อร่วมประมูลหรือจัดการสินค้า</p>
         </div>
 
@@ -108,7 +108,7 @@
           <div class="form-group" style="margin-top: 14px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
               <label for="password" style="margin-bottom: 0;">รหัสผ่าน</label>
-              <a href="/pages/forgot-password.html" style="font-size: 13px; color: #1d4ed8;">ลืมรหัสผ่าน?</a>
+              <a href="/pages/forgot-password.html" style="font-size: 13px; color: var(--color-primary);">ลืมรหัสผ่าน?</a>
             </div>
             <input type="password" id="password" class="input-figma" required placeholder="รหัสผ่านของคุณ">
           </div>
@@ -120,8 +120,8 @@
           </div>
         </form>
 
-        <div style="margin-top: 24px; text-align: center; font-size: 14px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 16px;">
-          ยังไม่มีบัญชีสมาชิก? <a href="/pages/register.html" style="color: #1d4ed8; font-weight: 500;">สมัครสมาชิกใหม่</a>
+        <div style="margin-top: 24px; text-align: center; font-size: 14px; color: var(--color-muted); border-top: 1px solid var(--color-border); padding-top: 16px;">
+          ยังไม่มีบัญชีสมาชิก? <a href="/pages/register.html" style="color: var(--color-primary); font-weight: 500;">สมัครสมาชิกใหม่</a>
         </div>
       </div>
     </div>

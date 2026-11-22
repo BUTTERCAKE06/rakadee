@@ -16,7 +16,10 @@ router.get('/health', asyncHandler(async (req, res) => {
 
 router.use('/auth', require('./auth.routes'));              // SA
 router.use('/wallet', require('./wallet.routes'));          // SA
-// router.use('/payments', require('./payment.routes'));   // SA
+router.use('/payments', require('./payment.routes'));        // SA: 7.7
+router.use('/orders', require('./order.payment.routes'));    // SA: 7.4–7.6
+router.use('/admin', require('./admin.payment.routes'));    // SA: 7.8–7.11
+router.use('/seller', require('./seller.earnings.routes')); // SA: 7.3
 // ── QA: เปิดสิทธิ์ผู้ขาย + ลงสินค้า ──────────────────────────────
 router.get('/categories', require('../controllers/listing.controller').getCategories);  // 4.1 public
 router.use('/seller', require('./seller.routes'));          // QA: 3.1–3.4, 4.9

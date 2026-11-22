@@ -28,7 +28,8 @@
       h('td', { text: A.formatMoney(A.moneyToSatang(w.price)) }),
       h('td', { text: w.orderStatus === 'pending_payment' ? fmtDate(w.paymentDueAt) : '-' }),
       h('td', null, h('span', { class: `badge ${cls}`, text })),
-      h('td', null, h('a', { class: `btn ${w.orderStatus === 'pending_payment' ? 'btn-primary' : ''}`, href: '/pages/orders.html',
+      h('td', null, h('a', { class: `btn ${w.orderStatus === 'pending_payment' ? 'btn-primary' : ''}`,
+        href: w.orderStatus === 'pending_payment' ? `/pages/payment.html?orderId=${w.orderId}` : '/pages/orders.html',
         text: w.orderStatus === 'pending_payment' ? 'ชำระเงิน' : 'ดูคำสั่งซื้อ' })));
   }
 

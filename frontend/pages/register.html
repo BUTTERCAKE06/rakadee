@@ -6,13 +6,13 @@
   <title>สมัครสมาชิก - Rakadee</title>
   <link rel="stylesheet" href="/css/main.css">
   <style>
-    /* สไตล์เฉพาะหน้าสมัครสมาชิก */
+    /* สไตล์ตามธีมกลาง css/main.css */
     .auth-container { max-width: 540px; margin: 40px auto; }
     
     .card-figma {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 16px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: calc(var(--radius) * 2);
       padding: 32px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
@@ -20,12 +20,12 @@
     .logo-badge {
       width: 40px;
       height: 40px;
-      background: #103ba1;
-      border-radius: 10px;
+      background: var(--color-primary-dark);
+      border-radius: var(--radius);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: #ffffff;
+      color: var(--color-surface);
       font-weight: 700;
       font-size: 22px;
       margin-bottom: 12px;
@@ -34,13 +34,13 @@
     .form-group label {
       font-size: 14px;
       font-weight: 600;
-      color: #0f172a;
+      color: var(--color-text);
       margin-bottom: 6px;
       display: block;
     }
 
     .required-star {
-      color: #dc2626;
+      color: var(--color-danger);
       font-weight: 700;
       margin-left: 3px;
     }
@@ -48,23 +48,23 @@
     .input-figma {
       width: 100%;
       padding: 10px 14px;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
       font-size: 15px;
-      color: #0f172a;
+      color: var(--color-text);
       outline: none;
       transition: all 0.15s ease;
-      background: #ffffff;
+      background: var(--color-surface);
       box-sizing: border-box;
     }
     .input-figma:focus {
-      border-color: #1d4ed8;
+      border-color: var(--color-primary);
       box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
     }
 
     .helper-text {
       font-size: 13px;
-      color: #64748b;
+      color: var(--color-muted);
       margin-top: 4px;
       display: block;
     }
@@ -72,10 +72,10 @@
     .btn-figma-primary {
       width: 100%;
       height: 46px;
-      background: #1d4ed8;
-      color: #ffffff;
+      background: var(--color-primary);
+      color: var(--color-surface);
       border: none;
-      border-radius: 8px;
+      border-radius: var(--radius);
       font-size: 15px;
       font-weight: 500;
       cursor: pointer;
@@ -85,7 +85,7 @@
       justify-content: center;
     }
     .btn-figma-primary:hover:not(:disabled) {
-      background: #1e40af;
+      background: var(--color-primary-dark);
     }
     .btn-figma-primary:disabled {
       opacity: 0.5;
@@ -94,19 +94,19 @@
 
     .btn-figma-secondary {
       padding: 8px 16px;
-      border-radius: 8px;
-      border: 1.5px solid #e2e8f0;
-      background: #ffffff;
-      color: #0f172a;
+      border-radius: var(--radius);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.15s;
     }
     .btn-figma-secondary:hover:not(:disabled) {
-      border-color: #1d4ed8;
-      color: #1d4ed8;
-      background: #eff6ff;
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: var(--color-bg);
     }
     .btn-figma-secondary:disabled {
       opacity: 0.5;
@@ -116,12 +116,12 @@
     .terms-box {
       max-height: 190px;
       overflow-y: auto;
-      background: #f8fafc;
+      background: var(--color-bg);
       padding: 16px;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
       font-size: 13px;
-      color: #334155;
+      color: var(--color-text);
       line-height: 1.6;
       margin-bottom: 12px;
     }
@@ -131,7 +131,7 @@
       font-size: 28px;
       text-align: center;
       font-weight: 700;
-      color: #1d4ed8;
+      color: var(--color-primary);
       font-family: monospace;
     }
 
@@ -143,8 +143,8 @@
       border-radius: 9999px;
       font-size: 12px;
       font-weight: 500;
-      background: #dcfce7;
-      color: #15803d;
+      background: color-mix(in srgb, var(--color-success) 12%, transparent);
+      color: var(--color-success);
     }
     .badge-dot::before {
       content: '';
@@ -152,7 +152,7 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #16a34a;
+      background: var(--color-success);
     }
 
     .hidden { display: none !important; }
@@ -170,19 +170,19 @@
         <div id="step-register">
           <div style="text-align: center; margin-bottom: 24px;">
             <div class="logo-badge">R</div>
-            <h2 style="margin: 0; font-size: 24px; color: #0f172a;">สมัครสมาชิก Rakadee</h2>
+            <h2 style="margin: 0; font-size: 24px; color: var(--color-text);">สมัครสมาชิก Rakadee</h2>
             <p class="muted" style="margin: 6px 0 0; font-size: 14px;">สร้างบัญชีเพื่อเริ่มต้นประมูลและลงขายสินค้า</p>
           </div>
 
           <!-- ข้อกำหนดและ PDPA (ข้อ 2.1 ต้องยอมรับก่อน) -->
           <div style="margin-bottom: 16px;">
-            <label style="font-weight: 600; font-size: 13.5px; color: #0f172a; margin-bottom: 6px; display: block;">
+            <label style="font-weight: 600; font-size: 13.5px; color: var(--color-text); margin-bottom: 6px; display: block;">
               ข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว
             </label>
             <div class="terms-box" id="terms-content">กำลังโหลดข้อกำหนดและนโยบายความเป็นส่วนตัว...</div>
-            <label style="display:flex; align-items:flex-start; gap:10px; font-weight:normal; cursor:pointer; font-size: 13.5px; color: #1e293b; background: #f1f5f9; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1;">
+            <label style="display:flex; align-items:flex-start; gap:10px; font-weight:normal; cursor:pointer; font-size: 13.5px; color: var(--color-text); background: var(--color-bg); padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--color-border);">
               <input type="checkbox" id="accept-terms" required style="margin-top: 3px; width: 16px; height: 16px; cursor: pointer;">
-              <span>ฉันได้อ่านและยอมรับ <strong>ข้อกำหนดการใช้งาน</strong> และ <strong>นโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA)</strong> <span style="color: #dc2626; font-weight: 600;">*</span></span>
+              <span>ฉันได้อ่านและยอมรับ <strong>ข้อกำหนดการใช้งาน</strong> และ <strong>นโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA)</strong> <span style="color: var(--color-danger); font-weight: 600;">*</span></span>
             </label>
           </div>
 
@@ -229,8 +229,8 @@
             </div>
           </form>
 
-          <div style="margin-top: 24px; text-align: center; font-size: 14px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 16px;">
-            มีบัญชีอยู่แล้ว? <a href="/pages/login.html" style="color: #1d4ed8; font-weight: 500;">เข้าสู่ระบบ</a>
+          <div style="margin-top: 24px; text-align: center; font-size: 14px; color: var(--color-muted); border-top: 1px solid var(--color-border); padding-top: 16px;">
+            มีบัญชีอยู่แล้ว? <a href="/pages/login.html" style="color: var(--color-primary); font-weight: 500;">เข้าสู่ระบบ</a>
           </div>
         </div>
 
@@ -238,9 +238,9 @@
         <div id="step-otp" class="hidden">
           <div style="text-align: center; margin-bottom: 24px;">
             <div class="logo-badge">R</div>
-            <h2 style="margin: 0; font-size: 24px; color: #0f172a;">ยืนยันรหัส OTP</h2>
+            <h2 style="margin: 0; font-size: 24px; color: var(--color-text);">ยืนยันรหัส OTP</h2>
             <p class="muted" style="margin: 6px 0 0; font-size: 14px;">
-              ระบบได้ส่งรหัส OTP 6 หลักไปยังเบอร์ <strong id="otp-phone-display" style="color: #0f172a;"></strong>
+              ระบบได้ส่งรหัส OTP 6 หลักไปยังเบอร์ <strong id="otp-phone-display" style="color: var(--color-text);"></strong>
             </p>
             <div style="margin-top: 8px;">
               <span class="badge-dot">รับเงินทดลอง 10,000 บาททันทีที่ยืนยัน</span>
@@ -260,8 +260,8 @@
             </div>
           </form>
 
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; font-size: 14px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
-            <span id="otp-timer" class="muted">หมดอายุใน: <strong id="otp-countdown" style="color: #dc2626;">05:00</strong></span>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; font-size: 14px; border-top: 1px solid var(--color-border); padding-top: 16px;">
+            <span id="otp-timer" class="muted">หมดอายุใน: <strong id="otp-countdown" style="color: var(--color-danger);">05:00</strong></span>
             <button type="button" class="btn-figma-secondary" id="btn-resend-otp" disabled>
               ขอรหัสใหม่ (<span id="resend-countdown">60</span>s)
             </button>
@@ -306,7 +306,7 @@
     api.get('/auth/terms')
       .then(data => {
         const box = document.getElementById('terms-content');
-        box.innerHTML = (data.termsHtml || '') + '<hr style="margin: 8px 0; border: none; border-top: 1px solid #e2e8f0;">' + (data.privacyHtml || '');
+        box.innerHTML = (data.termsHtml || '') + '<hr style="margin: 8px 0; border: none; border-top: 1px solid var(--color-border);">' + (data.privacyHtml || '');
       })
       .catch(() => {
         document.getElementById('terms-content').textContent = 'ข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว (PDPA) ของ Rakadee';

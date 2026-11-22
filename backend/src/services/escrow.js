@@ -151,12 +151,21 @@ async function release(orderId, existingConn = null) {
       [orderId]
     );
 
-    // แจ้งเตือนผู้ขาย
+    // แจ้งเตือนผู้ขาย (เงินเข้ากระเป๋า)
     notify(sellerId, EVENTS.FUNDS_RELEASED, {
       orderId,
       amount: netSellerAmount,
       feeAmount,
     }).catch(() => {});
+
+    // แจ้งเตือนผู้ซื้อ (คำสั่งซื้อเสร็จสมบูรณ์) — notify ทั้งสองฝั่งตาม requirement
+    if (order.buyer_id) {
+      notify(order.buyer_id, EVENTS.PAYMENT_SUCCESS, {
+        orderId,
+        title: 'คำสั่งซื้อเสร็จสมบูรณ์',
+        message: `คำสั่งซื้อ #${orderId} เสร็จสมบูรณ์แล้ว ระบบได้ปล่อยเงินให้ผู้ขายเรียบร้อย`,
+      }).catch(() => {});
+    }
 
     return {
       orderId: Number(orderId),

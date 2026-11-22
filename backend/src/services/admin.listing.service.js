@@ -4,7 +4,7 @@ const db = require('../config/db');
 const AppError = require('../utils/AppError');
 const { notify, EVENTS } = require('./notify');
 const audit = require('./audit');
-const { fetchListingRow, fetchImages, serializeListingDetail } = require('./listing.service');
+const { fetchListingRow, fetchImages, serializeListingDetail, buildMe } = require('./listing.service');
 
 // ----------------------------------------------------------------
 // 4.10 GET /api/admin/listings — รายการตามสถานะ
@@ -78,10 +78,10 @@ async function adminListListings({ status = 'pending_review', q, page = 1, limit
 // ----------------------------------------------------------------
 // 4.11 GET /api/admin/listings/:id — รายละเอียดเต็ม (รวม reserve)
 // ----------------------------------------------------------------
-async function adminGetListing(listingId) {
+async function adminGetListing(listingId, adminId) {
   const row = await fetchListingRow(listingId);
   const images = await fetchImages(listingId);
-  return serializeListingDetail(row, images, true /* isOwner = show reservePrice */);
+  return serializeListingDetail(row, images, true /* isOwner = show reservePrice */, await buildMe(row, adminId));
 }
 
 // ----------------------------------------------------------------

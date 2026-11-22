@@ -15,7 +15,7 @@ function validationError(errors) {
 // ---------------------------------------------------------------- UserMe (1.7)
 async function getMe(userId) {
   const [rows] = await db.pool.query(
-    `SELECT u.*, (sp.id IS NOT NULL) AS is_seller
+    `SELECT u.*, (u.role = 'seller') AS is_seller
        FROM users u LEFT JOIN seller_profiles sp ON sp.user_id = u.id
       WHERE u.id = ?`,
     [userId],
@@ -252,7 +252,7 @@ async function updateNotificationSettings(userId, body) {
 async function getPublicUser(id) {
   const [rows] = await db.pool.query(
     `SELECT u.id, u.display_name, u.avatar_path, u.bio, u.created_at, u.role, u.phone_verified_at, u.email_verified_at,
-            (sp.id IS NOT NULL) AS is_seller
+            (u.role = 'seller') AS is_seller
        FROM users u LEFT JOIN seller_profiles sp ON sp.user_id = u.id
       WHERE u.id = ? AND u.role IN ('bidder', 'seller') AND u.status <> 'banned'`,
     [id],

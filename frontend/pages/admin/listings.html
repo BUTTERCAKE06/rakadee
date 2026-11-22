@@ -3,61 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ตรวจสอบสินค้า — Admin | Rakadee</title>
+  <title>อนุมัติสินค้า — Admin | Rakadee</title>
   <link rel="stylesheet" href="/css/main.css" />
   <link rel="stylesheet" href="/css/admin.css" />
-  <style>
-    .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:20px; }
-    .toolbar input[type=search] { padding:8px 12px; border:1px solid var(--color-border); border-radius:var(--radius); font:inherit; min-width:200px; }
-    .tab-bar { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:20px; border-bottom:2px solid var(--color-border); padding-bottom:0; }
-    .tab-bar button { background:none; border:none; padding:10px 16px; cursor:pointer; font:inherit; color:var(--color-muted); border-bottom:2px solid transparent; margin-bottom:-2px; border-radius:0; }
-    .tab-bar button.active { color:var(--color-primary); border-bottom-color:var(--color-primary); font-weight:600; }
-    .tab-bar button:hover:not(.active) { color:var(--color-text); }
-
-    .data-table { background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius); overflow:hidden; }
-    .data-table table { margin:0; }
-    .data-table td, .data-table th { vertical-align:middle; }
-    .data-table td:first-child { width:60px; }
-    .cover-sm { width:52px; height:52px; object-fit:cover; border-radius:6px; background:var(--color-bg); display:block; }
-    .cover-sm-placeholder { width:52px; height:52px; border-radius:6px; background:var(--color-bg); display:flex; align-items:center; justify-content:center; color:var(--color-muted); font-size:22px; }
-    .row-link { cursor:pointer; }
-    .row-link:hover td { background:#f0f4ff; }
-
-    .empty-state { text-align:center; padding:60px 20px; color:var(--color-muted); }
-    .pagination { display:flex; gap:8px; justify-content:center; margin-top:24px; align-items:center; }
-  </style>
+  <link rel="stylesheet" href="/css/qa.css" />
 </head>
 <body class="admin-page">
   <aside class="admin-sidebar" id="admin-sidebar"></aside>
 
   <div class="admin-main">
-  <div class="admin-topbar" id="admin-topbar" data-title="ตรวจสอบและอนุมัติสินค้า"></div>
+    <div class="admin-topbar" id="admin-topbar" data-title="อนุมัติสินค้า"></div>
 
-  <main class="admin-content">
-    <div id="alert-area" style="margin-bottom:12px;"></div>
+    <main class="admin-content">
+      <div id="alert-area" aria-live="polite"></div>
 
-    <div class="tab-bar" id="tab-bar">
-      <button data-status="pending_review" class="active">รอตรวจสอบ</button>
-      <button data-status="active">กำลังประมูล</button>
-      <button data-status="rejected">ไม่อนุมัติ</button>
-      <button data-status="draft">ฉบับร่าง</button>
-      <button data-status="ended">สิ้นสุดแล้ว</button>
-    </div>
+      <div class="qa-chips" id="chips" aria-label="กรองสถานะ">
+        <button type="button" class="qa-pill is-warning is-on" data-status="pending_review">รอตรวจสอบ <span id="pending-count"></span></button>
+        <button type="button" class="qa-pill" data-status="">ทั้งหมดทุกสถานะ</button>
+      </div>
 
-    <div class="toolbar">
-      <input type="search" id="search-input" placeholder="🔍 ค้นหาชื่อสินค้า / ผู้ขาย..." />
-      <button class="btn" id="btn-search">ค้นหา</button>
-    </div>
+      <div class="qa-grid-main is-list-panel">
+        <section>
+          <div class="qa-table-wrap">
+            <table>
+              <thead><tr><th>สินค้า</th><th>ผู้ขาย</th><th>หมวด</th><th>ราคาเริ่มต้น</th><th></th></tr></thead>
+              <tbody id="rows"><tr><td colspan="5" class="empty">กำลังโหลด...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="qa-pagination" id="pagination"></div>
+        </section>
 
-    <div id="table-container">
-      <div class="empty-state"><p>กำลังโหลด...</p></div>
-    </div>
-    <div class="pagination" id="pagination"></div>
-  </main>
+        <aside class="card" id="panel">
+          <h2 class="qa-card-title">รายละเอียดสินค้า</h2>
+          <p class="muted" style="margin:0;">กด "ดู" ที่รายการเพื่อตรวจสอบ</p>
+        </aside>
+      </div>
+    </main>
   </div>
 
   <script src="/js/api.js"></script>
   <script src="/js/admin/admin-shell.js"></script>
+  <script src="/js/qa-common.js"></script>
   <script src="/js/admin/listings.js"></script>
 </body>
 </html>

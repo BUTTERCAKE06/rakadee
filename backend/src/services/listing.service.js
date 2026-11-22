@@ -1,6 +1,7 @@
 // listing.service.js — สินค้า: ลงขายและอนุมัติ ฝั่ง seller (api-spec 4.1–4.9)
 // เจ้าของ: QA
 const db = require('../config/db');
+const time = require('../config/time');
 const AppError = require('../utils/AppError');
 
 // ----------------------------------------------------------------
@@ -14,7 +15,20 @@ const DURATION_DAYS_ALLOWED = [1, 3, 7];
 // serializer — ListingDetail (เจ้าของ: Programmer ที่ 5.2)
 // QA เขียนเองสำหรับ endpoint ของฝั่งเจ้าของ ห้ามแก้ไฟล์ Programmer
 // ----------------------------------------------------------------
-function serializeListingDetail(row, images, isOwner = false) {
+// ข้อมูล "me" ของผู้ดู ตาม ListingDetail ใน api-spec 5.2 — { isOwner, isLeading, inWatchlist, proxy }
+async function buildMe(row, viewerId) {
+  if (!viewerId) return null;
+  const [[w]] = await db.query('SELECT 1 AS x FROM watchlists WHERE user_id = ? AND listing_id = ? LIMIT 1', [viewerId, row.id]);
+  const [[p]] = await db.query('SELECT max_amount, is_active FROM proxy_bids WHERE listing_id = ? AND bidder_id = ?', [row.id, viewerId]);
+  return {
+    isOwner: Number(row.seller_id) === Number(viewerId),
+    isLeading: row.current_bidder_id !== null && Number(row.current_bidder_id) === Number(viewerId),
+    inWatchlist: Boolean(w),
+    proxy: p ? { maxAmount: Number(p.max_amount), isActive: Boolean(p.is_active) } : null,
+  };
+}
+
+function serializeListingDetail(row, images, isOwner = false, me = null) {
   const detail = {
     id: row.id,
     title: row.title,
@@ -54,6 +68,7 @@ function serializeListingDetail(row, images, isOwner = false) {
     startAt: row.start_at ? row.start_at.toISOString() : null,
     endAt: row.end_at ? row.end_at.toISOString() : null,
     extendCount: row.extend_count,
+    maxExtendCount: time.autoExtendMaxCount,
     serverTime: new Date().toISOString(),
     seller: {
       id: row.seller_id,
@@ -61,6 +76,7 @@ function serializeListingDetail(row, images, isOwner = false) {
       shopName: row.shop_name,
     },
     durationDays: row.duration_days,
+    me,
   };
 
   // ฟิลด์เฉพาะเจ้าของ (seller + admin)
@@ -122,8 +138,9 @@ function validateListingBody(body) {
   if (!itemCondition || !ITEM_CONDITIONS.includes(itemCondition)) {
     errors.itemCondition = `สภาพสินค้าต้องเป็นหนึ่งใน: ${ITEM_CONDITIONS.join(', ')}`;
   }
-  if (itemCondition === 'defective' && !defectDetail?.trim()) {
-    errors.defectDetail = 'กรุณาระบุรายละเอียดตำหนิ';
+  // บังคับสำหรับสินค้ามือสองทุกแบบ (ข้อ 3.1-1f + ภาพ UI ลงสินค้าขั้น 1) — ถ้าไม่มีตำหนิให้พิมพ์ "ไม่มีตำหนิ"
+  if ((itemCondition === 'used_good' || itemCondition === 'defective') && !String(defectDetail ?? '').trim()) {
+    errors.defectDetail = 'กรุณาระบุตำหนิ หรือพิมพ์ "ไม่มีตำหนิ"';
   }
   if (!originProvince || !String(originProvince).trim()) errors.originProvince = 'จังหวัดต้นทางต้องไม่ว่างเปล่า';
 
@@ -233,7 +250,7 @@ async function createListing(sellerId, body) {
       String(body.description).trim(),
       body.includedItems ? String(body.includedItems).trim() : null,
       body.itemCondition,
-      body.itemCondition === 'defective' ? String(body.defectDetail).trim() : null,
+      body.itemCondition !== 'new' && body.defectDetail ? String(body.defectDetail).trim() || null : null,
       Number(body.shippingFee),
       originProv,
       Number(body.startPrice),
@@ -249,7 +266,7 @@ async function createListing(sellerId, body) {
   const listingId = result.insertId;
   const row = await fetchListingRow(listingId);
   const images = await fetchImages(listingId);
-  return serializeListingDetail(row, images, true);
+  return serializeListingDetail(row, images, true, await buildMe(row, sellerId));
 }
 
 // ----------------------------------------------------------------
@@ -296,8 +313,9 @@ async function updateListing(listingId, sellerId, body) {
         ? (body.includedItems ? String(body.includedItems).trim() : null)
         : row.included_items,
       body.itemCondition ?? row.item_condition,
-      (body.itemCondition ?? row.item_condition) === 'defective'
-        ? (body.defectDetail ? String(body.defectDetail).trim() : row.defect_detail)
+      // เก็บรายละเอียดตำหนิสำหรับสินค้ามือสองทุกแบบ (บังคับเฉพาะ defective ตาม validate) ของใหม่ไม่เก็บ
+      (body.itemCondition ?? row.item_condition) !== 'new'
+        ? (body.defectDetail !== undefined ? (String(body.defectDetail ?? '').trim() || null) : row.defect_detail)
         : null,
       body.shippingFee !== undefined ? Number(body.shippingFee) : row.shipping_fee,
       body.originProvince ? String(body.originProvince).trim() : row.origin_province,
@@ -316,7 +334,7 @@ async function updateListing(listingId, sellerId, body) {
 
   const updated = await fetchListingRow(listingId);
   const images = await fetchImages(listingId);
-  return serializeListingDetail(updated, images, true);
+  return serializeListingDetail(updated, images, true, await buildMe(updated, sellerId));
 }
 
 // ----------------------------------------------------------------
@@ -524,7 +542,7 @@ async function getMyListings(sellerId, { status, page = 1, limit = 20 }) {
             l.item_condition, l.current_price, l.start_price,
             l.bid_count, l.buy_now_price, l.shipping_fee,
             l.status, l.end_at, l.category_id,
-            l.reject_reason, l.submitted_at
+            l.reject_reason, l.submitted_at, l.duration_days
      FROM listings l
      WHERE ${whereClause}
      ORDER BY l.created_at DESC
@@ -548,6 +566,7 @@ async function getMyListings(sellerId, { status, page = 1, limit = 20 }) {
       categoryId: r.category_id,
       rejectReason: r.reject_reason,
       submittedAt: r.submitted_at ? r.submitted_at.toISOString() : null,
+      durationDays: r.duration_days, // เพิ่มจาก spec 4.9 สำหรับคอลัมน์ "ระยะเวลา" ในหน้าสินค้าของฉัน (รอ SA เพิ่มใน api-spec)
     })),
     page: pg,
     limit: lm,
@@ -580,4 +599,5 @@ module.exports = {
   fetchListingRow,
   fetchImages,
   serializeListingDetail,
+  buildMe,
 };

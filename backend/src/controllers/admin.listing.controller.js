@@ -13,7 +13,7 @@ const listListings = asyncHandler(async (req, res) => {
 // 4.11 GET /api/admin/listings/:id
 const getListing = asyncHandler(async (req, res) => {
   const id = parseId(req.params.id, 'id');
-  const data = await adminListingService.adminGetListing(id);
+  const data = await adminListingService.adminGetListing(id, req.user.id);
   ok(res, data);
 });
 

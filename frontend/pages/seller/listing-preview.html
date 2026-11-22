@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ตัวอย่างสินค้า — Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/qa.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container account-layout" style="padding-top:24px;">
+    <aside class="account-nav" id="seller-nav"></aside>
+
+    <section>
+      <h1 class="page-title">ตัวอย่างสินค้า (Preview)</h1>
+      <div id="alert-area" aria-live="polite"></div>
+
+      <div class="card" id="content" hidden>
+        <div class="qa-preview">
+          <div>
+            <div class="qa-preview-img" id="cover">🖼</div>
+            <div class="qa-thumbs" id="thumbs"></div>
+          </div>
+          <div>
+            <span id="cond"></span>
+            <h2 id="title"></h2>
+            <dl class="qa-kv" id="kv"></dl>
+          </div>
+        </div>
+        <div class="row-actions" style="margin-top:16px;">
+          <a class="btn" id="btn-edit" href="#">กลับไปแก้ไข</a>
+          <a class="btn btn-link" href="/pages/seller/listings.html?msg=saved">บันทึกร่าง</a>
+          <button type="button" class="btn btn-accent" id="btn-submit">ส่งตรวจสอบ</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="qa-footer">
+    <div class="container">
+      <div>RAKADEE — แพลตฟอร์มประมูลสินค้าออนไลน์ มีระบบพักเงินกลาง (Escrow)</div>
+      <div class="links"><a href="/pages/terms.html">เงื่อนไขการให้บริการ</a> · <a href="/pages/terms.html#privacy">นโยบายความเป็นส่วนตัว (PDPA)</a> · <a href="/pages/help.html">ช่วยเหลือ</a></div>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/seller/seller-nav.js"></script>
+  <script src="/js/qa-common.js"></script>
+  <script src="/js/seller/listing-preview.js"></script>
+</body>
+</html>

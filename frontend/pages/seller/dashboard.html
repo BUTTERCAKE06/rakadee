@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>แดชบอร์ดผู้ขาย — Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/qa.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container account-layout" style="padding-top:24px;">
+    <aside class="account-nav" id="seller-nav"></aside>
+
+    <section>
+      <div class="qa-title-row" style="justify-content:space-between;">
+        <h1>แดชบอร์ดผู้ขาย</h1>
+        <a class="btn btn-accent" href="/pages/seller/listing-form.html">+ ลงสินค้าใหม่</a>
+      </div>
+      <div id="alert-area" aria-live="polite"></div>
+
+      <div class="qa-stat-grid" id="stats">
+        <div class="stat-card"><div class="label">สินค้ารออนุมัติ</div><div class="value" id="st-pending">-</div><div class="sub">รอแอดมินตรวจสอบ</div></div>
+        <div class="stat-card"><div class="label">กำลังประมูล</div><div class="value" id="st-active">-</div><div class="sub" id="st-active-sub">ราคารวม -</div></div>
+        <div class="stat-card"><div class="label">รอจัดส่ง</div><div class="value" id="st-ship">-</div><div class="sub" id="st-ship-sub">กำหนดส่งภายใน 72 ชม.</div></div>
+        <div class="stat-card"><div class="label">เงินรอรับ (Escrow)</div><div class="value" id="st-escrow">-</div><div class="sub" id="st-escrow-sub">ยังไม่ปล่อย</div></div>
+        <div class="stat-card"><div class="label">รายได้สุทธิ</div><div class="value" id="st-net">-</div><div class="sub" id="st-net-sub">หลังหักค่าธรรมเนียม</div></div>
+      </div>
+
+      <div class="qa-section-head">
+        <h2>รอจัดส่ง — เร่งด่วน</h2>
+        <span class="muted" id="ship-all" title="ยังไม่มีหน้า — งานของ PM (Shipping)">ดูทั้งหมด →</span>
+      </div>
+      <div class="qa-table-wrap" style="margin-bottom:20px;">
+        <table>
+          <thead><tr><th>รหัส</th><th>สินค้า</th><th>ผู้ซื้อ</th><th>เหลือเวลา</th><th></th></tr></thead>
+          <tbody id="ship-rows"><tr><td colspan="5" class="empty">กำลังโหลด...</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="qa-section-head"><h2>กำลังประมูล</h2></div>
+      <div class="qa-table-wrap">
+        <table>
+          <thead><tr><th>สินค้า</th><th>ราคาปัจจุบัน</th><th>จำนวนบิด</th><th>เหลือเวลา</th></tr></thead>
+          <tbody id="active-rows"><tr><td colspan="4" class="empty">กำลังโหลด...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="qa-footer">
+    <div class="container">
+      <div>RAKADEE — แพลตฟอร์มประมูลสินค้าออนไลน์ มีระบบพักเงินกลาง (Escrow)</div>
+      <div class="links"><a href="/pages/terms.html">เงื่อนไขการให้บริการ</a> · <a href="/pages/terms.html#privacy">นโยบายความเป็นส่วนตัว (PDPA)</a> · <a href="/pages/help.html">ช่วยเหลือ</a></div>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/seller/seller-nav.js"></script>
+  <script src="/js/qa-common.js"></script>
+  <script src="/js/seller/dashboard.js"></script>
+</body>
+</html>

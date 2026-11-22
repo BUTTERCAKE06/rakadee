@@ -17,8 +17,8 @@ router.post(
   sellerCtrl.openShop
 );
 
-// 3.2 GET   /api/seller/profile  — ข้อมูลร้านของฉัน
-router.get('/profile', requireAuth, requireRole('seller'), sellerCtrl.getMyProfile);
+// 3.2 GET   /api/seller/profile  — ใบสมัคร/ข้อมูลร้านของฉัน หรือ null (member: ใช้ดูสถานะ pending/rejected ได้)
+router.get('/profile', requireAuth, requireRole('member'), sellerCtrl.getMyProfile);
 
 // 3.3 PUT   /api/seller/profile  — แก้ข้อมูลร้าน
 router.put(

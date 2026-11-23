@@ -235,6 +235,7 @@
 
     function renderTimer(remainingSec, isPaused = false) {
       const slot = document.getElementById('timer-slot');
+      clearInterval(timerInterval); // หยุดตัวนับเดิมก่อนเสมอ (หลังชำระแล้ว countdown ต้องไม่เดินต่อ)
       if (isPaused) {
         slot.innerHTML = `<span class="timer-badge timer-paused">⏸️ รอแอดมินตรวจ (หยุดนับเวลา)</span>`;
         return;
@@ -414,6 +415,7 @@
         await api.upload(`/orders/${orderId}/pay`, fd);
 
         showAlert('ชำระเงินและแนบสลิปเรียบร้อยแล้ว ขณะนี้อยู่ระหว่างรอแอดมินตรวจสอบ', false);
+        if (window.layout && window.layout.refreshWallet) window.layout.refreshWallet(); // ยอดบน navbar
         loadPaymentDetails();
       } catch (err) {
         showAlert(err.message || 'ชำระเงินไม่สำเร็จ');
@@ -468,7 +470,8 @@
         const addrs = await api.get('/users/me/addresses');
         const items = Array.isArray(addrs) ? addrs : addrs.items || [];
         if (items.length === 0) {
-          list.innerHTML = 'ไม่พบที่อยู่ในสมุดที่อยู่ของคุณ <a href="/pages/settings.html#addresses" target="_blank">เพิ่มที่อยู่ใหม่</a>';
+          const back = encodeURIComponent(location.pathname + location.search);
+          list.innerHTML = `ไม่พบที่อยู่ในสมุดที่อยู่ของคุณ <a href="/pages/settings.html?next=${back}#addresses">เพิ่มที่อยู่ใหม่</a>`;
           return;
         }
 

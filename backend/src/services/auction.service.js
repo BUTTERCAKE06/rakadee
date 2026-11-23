@@ -69,7 +69,7 @@ const ACCOUNT_ERRORS = {
 function tooLow(mode, minNext) {
   const code = mode === 'proxy' ? 'PROXY_TOO_LOW' : 'BID_TOO_LOW';
   const what = mode === 'proxy' ? 'วงเงิน Proxy ' : 'ราคาที่เสนอ';
-  return new AppError(400, code, `${what}ต้องไม่ต่ำกว่า ${formatBaht(minNext)} บาท`, { minNextBid: fromSatang(minNext) });
+  return new AppError(400, code, `${what}ต้องไม่ต่ำกว่า ${formatBaht(minNext)} บาท`, { minNextBid: Number(fromSatang(minNext)) });
 }
 
 // กฎข้อ 9 (D-14): วงเงินผู้นำถึง Reserve แล้วแต่ราคายังต่ำกว่า -> ดันราคาไปที่ Reserve
@@ -187,7 +187,9 @@ function decideBid({ listing: L, leaderProxy, user: U, amount: X, mode, now }) {
   let extendCount = L.extendCount;
   let extended = false;
   if (priceMoved && L.endAt - now <= time.autoExtendMs && L.extendCount < time.autoExtendMaxCount) {
-    endAt = now + time.autoExtendMs;
+    // listings.end_at เก็บละเอียดถึงวินาที (MySQL ปัดมิลลิวินาทีขึ้น/ลง) จึงปัดขึ้นเป็นวินาทีเต็มเอง
+    // เวลาปิดใหม่ไม่น้อยกว่าเวลาบิด + 2 นาทีเสมอ และค่าที่เก็บตรงกับที่ส่งให้ client
+    endAt = Math.ceil((now + time.autoExtendMs) / 1000) * 1000;
     extendCount += 1;
     extended = true;
   }

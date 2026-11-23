@@ -31,6 +31,7 @@
 | --- | --- | --- |
 | users.status | pending_verification, active, restricted, suspended, banned | D-03 |
 | users.role | bidder, seller, admin, super_admin | D-07 |
+| seller_profiles.status | pending, approved, rejected | D-18 |
 | listings.status | draft, pending_review, rejected, active, ended, cancelled | 1.7-1 |
 | listings.result | has_winner, no_bid, below_reserve, buy_now | 1.7-2 |
 | orders.status | pending_payment, awaiting_shipment, shipped, completed, disputed, cancelled | 1.7-3, D-08 |
@@ -50,13 +51,15 @@ sequenceDiagram
     participant Worker as Scheduler (node-cron)
     participant DB as Database
 
-    Note over Buyer, DB: 1. สมัครสมาชิกและเปิดร้าน (D-07)
+    Note over Buyer, DB: 1. สมัครสมาชิกและเปิดร้าน (D-07, D-18)
     Buyer->>API: POST /api/auth/register
     API->>DB: INSERT users (pending_verification), user_consents, otp_codes
     Buyer->>API: POST /api/auth/otp/verify
     API->>DB: UPDATE users (active) + INSERT wallets 10,000 + wallet_transactions (initial_credit)
     Seller->>API: POST /api/seller/profile
-    API->>DB: INSERT seller_profiles + UPDATE users.role = seller
+    API->>DB: INSERT seller_profiles (status = pending)
+    Admin->>API: POST /api/admin/sellers/:id/approve
+    API->>DB: UPDATE seller_profiles (approved) + UPDATE users.role = seller + admin_audit_logs
 
     Note over Buyer, DB: 2. ลงสินค้าและอนุมัติ
     Seller->>API: POST /api/listings + /images + /submit
@@ -89,6 +92,133 @@ sequenceDiagram
     Note over Buyer, DB: 7. ปล่อยเงินให้ผู้ขาย (D-10)
     API->>DB: UPDATE escrows (released, fee_amount, net_amount)
     API->>DB: UPDATE wallets ผู้ขาย (+ total − fee) + INSERT wallet_transactions (sale_proceeds)
+```
+
+## State Diagrams (แผนภาพแสดงการเปลี่ยนสถานะของระบบ)
+
+### 1. คำสั่งซื้อ (Order State Machine — `orders.status`)
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending_payment: ผู้ชนะประมูล / ซื้อทันที (ปิดประมูลสร้าง Order)
+    
+    pending_payment --> awaiting_shipment: ผู้ซื้อชำระเงิน + แอดมินอนุมัติสลิป (Escrow พักเงิน)
+    pending_payment --> cancelled: ไม่ชำระเงินภายใน 48 ชม. (Scheduler: paymentTimeout)
+    
+    awaiting_shipment --> shipped: ผู้ขายบันทึกข้อมูลจัดส่ง + เลขพัสดุ (ภายใน 72 ชม.)
+    awaiting_shipment --> cancelled: ผู้ขายไม่จัดส่งใน 72 ชม. (คืนเงิน Escrow เต็มจำนวน)
+    
+    shipped --> completed: ผู้ซื้อกดยืนยันรับสินค้า หรือครบ 7 วัน (Auto Release ปล่อยเงินให้ผู้ขาย)
+    shipped --> disputed: ผู้ซื้อเปิดข้อพิพาท (สินค้าไม่ตรงปก / ไม่ได้รับของ)
+    
+    disputed --> completed: แอดมินตัดสินให้ผู้ขายชนะ (release_seller -> ปล่อยเงิน)
+    disputed --> cancelled: แอดมินตัดสินให้ผู้ซื้อชนะ (refund_buyer -> คืนเงิน)
+    
+    completed --> [*]
+    cancelled --> [*]
+```
+
+### 2. การตรวจสอบการชำระเงิน (Payment State Machine — `payments.status`)
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending_review: ผู้ซื้อกดยืนยันชำระด้วย Wallet + แนบสลิป
+    
+    pending_review --> success: แอดมินอนุมัติ (เงินเข้า Escrow held, Order เป็น awaiting_shipment)
+    pending_review --> rejected: แอดมินปฏิเสธ (คืนเงินเข้า Wallet, ขยายเวลาชำระตาม D-01)
+    
+    rejected --> pending_review: ผู้ซื้อแก้ไข/ชำระเงินเข้ามาใหม่
+    
+    success --> [*]
+```
+
+### 3. เงินพักในระบบ (Escrow State Machine — `escrows.status`)
+
+```mermaid
+stateDiagram-v2
+    [*] --> held: แอดมินอนุมัติชำระเงิน (พักเงินเต็มจำนวน: ราคาประมูล + ค่าส่ง)
+    
+    held --> released: คำสั่งซื้อเสร็จสมบูรณ์ (หักค่าธรรมเนียม 5% ขั้นต่ำ 20 บ., โอนสุทธิให้ผู้ขาย)
+    held --> refunded: คำสั่งซื้อถูกยกเลิก / ผู้ซื้อชนะข้อพิพาท (คืนเงินเต็มจำนวนให้ผู้ซื้อ)
+    
+    released --> [*]
+    refunded --> [*]
+```
+
+### 4. สถานะบัญชีผู้ใช้ (User Account State Machine — `users.status`)
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending_verification: สมัครสมาชิกใหม่
+    
+    pending_verification --> active: ยืนยัน OTP เบอร์โทรสำเร็จ (รับเครดิตแรกเข้า 10,000 บาท)
+    
+    active --> restricted: ทำผิดกฎ / โดนลงโทษระดับจำกัด (ลงสินค้าไม่ได้ แต่บิดและชำระเงินได้)
+    active --> suspended: ทำผิดกฎร้ายแรง / ปั่นราคาบิด (บิดและลงสินค้าไม่ได้ ชำระเงินออเดอร์เดิมได้)
+    active --> banned: โดนแบนถาวร / Blacklist (เข้าสู่ระบบไม่ได้ทุกกรณี)
+    
+    restricted --> active: ครบกำหนดเวลาลงโทษ (Scheduler: restoreStatus)
+    suspended --> active: ครบกำหนดเวลาลงโทษ (Scheduler: restoreStatus)
+    
+    restricted --> banned: แอดมินยกระดับโทษ
+    suspended --> banned: แอดมินยกระดับโทษ
+    
+    banned --> [*]
+```
+
+### 5. การเปิดร้านค้าและสิทธิ์ผู้ขาย (Seller Profile State Machine — `seller_profiles.status` D-18)
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: สมาชิกทั่วไปยื่นขอเปิดร้าน (ยืนยันอีเมล + เลือกที่อยู่จัดส่ง)
+    
+    pending --> approved: แอดมินตรวจสอบและอนุมัติ (ผู้ใช้ได้ role = seller)
+    pending --> rejected: แอดมินไม่อนุมัติ (ระบุเหตุผล)
+    
+    rejected --> pending: ผู้ใช้แก้ไขข้อมูลร้านและยื่นใหม่
+    
+    approved --> [*]
+```
+
+### 6. สินค้าและการประมูล (Listing State Machine — `listings.status`)
+
+```mermaid
+stateDiagram-v2
+    [*] --> draft: ผู้ขายบันทึกข้อมูลสินค้า (แบบร่าง)
+    
+    draft --> pending_review: ผู้ขายส่งสินค้าให้แอดมินตรวจ
+    
+    pending_review --> active: แอดมินอนุมัติสินค้า (เปิดประมูลตามเวลาเริ่ม-จบ)
+    pending_review --> rejected: แอดมินปฏิเสธพร้อมระบุเหตุผล
+    
+    rejected --> pending_review: ผู้ขายแก้ไขรายละเอียดแล้วส่งใหม่
+    
+    active --> ended: หมดเวลาประมูล (มีผู้ชนะ / no_bid / ต่ำกว่าราคาขั้นต่ำ) หรือมีผู้กด Buy Now
+    active --> cancelled: แอดมินยกเลิก หรือผู้ขายยกเลิกก่อนมีบิด
+    
+    ended --> [*]
+    cancelled --> [*]
+```
+
+### 7. ข้อพิพาทคำสั่งซื้อ (Dispute State Machine — `disputes.status`)
+
+```mermaid
+stateDiagram-v2
+    [*] --> open: ผู้ซื้อเปิดข้อพิพาทก่อนคำสั่งซื้อเสร็จสมบูรณ์
+    
+    open --> awaiting_evidence: รอหลักฐานเพิ่มเติมจากผู้ซื้อหรือผู้ขาย
+    open --> investigating: ส่งหลักฐานครบ / แอดมินเข้าร่วมตรวจสอบ
+    
+    awaiting_evidence --> investigating: แนบหลักฐานเรียบร้อย
+    
+    investigating --> return_in_progress: แอดมินสั่งให้ผู้ซื้อส่งสินค้าคืนผู้ขาย
+    investigating --> refund_in_progress: แอดมินตัดสินคืนเงินผู้ซื้อโดยไม่ต้องส่งของคืน
+    investigating --> closed: แอดมินยกฟ้อง / ปล่อยเงินให้ผู้ขาย (release_seller)
+    
+    return_in_progress --> closed: ผู้ขายได้รับสินค้าคืนเรียบร้อย -> คืนเงินผู้ซื้อ (refund_buyer)
+    refund_in_progress --> closed: คืนเงินผู้ซื้อเรียบร้อย
+    
+    closed --> [*]
 ```
 
 ## ER Diagram
@@ -177,6 +307,12 @@ erDiagram
         varchar shop_name
         varchar shop_description "nullable"
         varchar origin_province
+        bigint address_id FK "nullable"
+        enum status "pending|approved|rejected"
+        varchar reject_reason "nullable"
+        datetime submitted_at
+        bigint reviewed_by FK "nullable"
+        datetime reviewed_at "nullable"
         datetime created_at
         datetime updated_at
     }
@@ -217,6 +353,7 @@ erDiagram
         enum result "has_winner|no_bid|below_reserve|buy_now"
         bigint winner_id FK
         datetime closed_at "nullable"
+        datetime ending_soon_notified_at "nullable"
         datetime created_at
         datetime updated_at
     }
@@ -271,6 +408,7 @@ erDiagram
         datetime paid_at "nullable"
         datetime ship_due_at "nullable"
         datetime ship_reminded_at "nullable"
+        datetime ship_overdue_notified_at "nullable"
         datetime shipped_at "nullable"
         datetime auto_release_at "nullable"
         datetime completed_at "nullable"
@@ -469,6 +607,8 @@ erDiagram
     users ||--o{ penalties : "user_id"
     users ||--o{ proxy_bids : "bidder_id"
     listings ||--o{ proxy_bids : "listing_id"
+    addresses |o--o{ seller_profiles : "address_id"
+    users ||--o{ seller_profiles : "reviewed_by"
     users |o--o| seller_profiles : "user_id"
     users ||--o{ sessions : "user_id"
     orders |o--o| shipments : "order_id"

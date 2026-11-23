@@ -97,9 +97,9 @@ async function getPaymentInfo(orderId, buyerId) {
   const shortfall = Math.max(0, Number((totalAmount - walletBalance).toFixed(2)));
 
   // คำนวณเวลาที่เหลือ (วินาที)
-  // D-01: ถ้าระหว่างรอแอดมินตรวจ (pending_review) เวลา 48 ชม. หยุดนับ -> remainingSec = null
+  // D-01: ถ้าระหว่างรอแอดมินตรวจ (pending_review) หรือไม่อยู่ในสถานะ pending_payment ให้หยุดนับ -> remainingSec = null
   let remainingSec = null;
-  if (!latestPayment || latestPayment.status !== 'pending_review') {
+  if (order.status === 'pending_payment' && (!latestPayment || latestPayment.status !== 'pending_review')) {
     const msLeft = new Date(order.payment_due_at).getTime() - Date.now();
     remainingSec = Math.max(0, Math.floor(msLeft / 1000));
   }
@@ -124,6 +124,7 @@ async function getPaymentInfo(orderId, buyerId) {
     itemPrice: Number(order.item_price),
     shippingFee: Number(order.shipping_fee),
     totalAmount,
+    status: order.status,
     paymentDueAt: new Date(order.payment_due_at).toISOString(),
     remainingSec,
     paymentMethods: ['mock_wallet'],

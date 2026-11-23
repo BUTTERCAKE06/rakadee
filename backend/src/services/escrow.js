@@ -6,6 +6,15 @@ const { withTransaction } = require('../config/db');
 const AppError = require('../utils/AppError');
 const { notify, EVENTS } = require('./notify');
 const settings = require('./settings');
+const dispute = require('./dispute');
+
+// แปลงเป็นสตางค์ เพื่อคำนวณเงินอย่างแม่นยำ ไม่ผ่าน float ตาม AGENTS.md
+function toSatang(value) {
+  const s = typeof value === 'number' ? value.toFixed(2) : String(value || '0').trim();
+  const [baht, frac = ''] = s.split('.');
+  return Number(baht) * 100 + Number(frac.padEnd(2, '0'));
+}
+const toDecimal = (satang) => `${Math.floor(satang / 100)}.${String(satang % 100).padStart(2, '0')}`;
 
 // ค่าเริ่มต้นตาม requirement 5.4 (ค่าจริงอ่านจากตั้งค่าระบบด้วย settings.feeConfig())
 const DEFAULT_FEE = { percent: 5, min: 20 };
@@ -80,12 +89,8 @@ async function hold(orderId, existingConn = null) {
  */
 async function release(orderId, existingConn = null) {
   const runner = async (conn) => {
-    // 1. ตรวจสอบข้อพิพาทที่ยังเปิดอยู่ (ถ้ามีห้ามปล่อยเงิน D-08)
-    const [disputes] = await conn.query(
-      'SELECT id, status FROM disputes WHERE order_id = ? AND status NOT IN (\'resolved\', \'closed\') LIMIT 1',
-      [orderId]
-    );
-    if (disputes.length > 0) {
+    // 1. ตรวจสอบข้อพิพาทที่ยังเปิดอยู่ (ถ้ามีห้ามปล่อยเงิน D-08 ผ่าน shared interface dispute.isOpen)
+    if (await dispute.isOpen(orderId, conn)) {
       throw new AppError(409, 'INVALID_STATE', 'ไม่สามารถปล่อยเงินได้เนื่องจากมีข้อพิพาทที่ยังไม่สิ้นสุด');
     }
 
@@ -111,13 +116,16 @@ async function release(orderId, existingConn = null) {
     const order = orders[0];
     const sellerId = Number(order.seller_id);
     const itemPrice = Number(order.item_price);
-    const totalAmount = Number(order.total_amount);
+    const totalSatang = toSatang(order.total_amount);
 
-    // 4. คำนวณค่าธรรมเนียมแพลตฟอร์ม: คิดจาก item_price เท่านั้น (D-10)
+    // 4. คำนวณค่าธรรมเนียมแพลตฟอร์ม: คิดจาก item_price เท่านั้น (D-10) เป็นหน่วยสตางค์
     const feeAmount = calculatePlatformFee(itemPrice, await settings.feeConfig()); // ค่าตั้ง ณ เวลาปล่อยเงิน
-    const netSellerAmount = totalAmount - feeAmount;
+    const feeSatang = toSatang(feeAmount);
+    const netSellerSatang = Math.max(0, totalSatang - feeSatang);
+    const netSellerDecimal = toDecimal(netSellerSatang);
+    const feeDecimal = toDecimal(feeSatang);
 
-    // 5. โอนเงินสุทธิเข้า Wallet ของผู้ขาย
+    // 5. โอนเงินสุทธิเข้า Wallet ของผู้ขาย (คำนวณแบบ integer satang)
     const [sellerWallets] = await conn.query(
       'SELECT id, balance FROM wallets WHERE user_id = ? FOR UPDATE',
       [sellerId]
@@ -127,12 +135,13 @@ async function release(orderId, existingConn = null) {
     }
 
     const sellerWallet = sellerWallets[0];
-    const balanceBefore = Number(sellerWallet.balance);
-    const balanceAfter = balanceBefore + netSellerAmount;
+    const balanceBeforeSatang = toSatang(sellerWallet.balance);
+    const balanceAfterSatang = balanceBeforeSatang + netSellerSatang;
+    const balanceAfterDecimal = toDecimal(balanceAfterSatang);
 
     await conn.query(
       'UPDATE wallets SET balance = ? WHERE id = ?',
-      [balanceAfter, sellerWallet.id]
+      [balanceAfterDecimal, sellerWallet.id]
     );
 
     // 6. บันทึกธุรกรรม ledger (wallet_transactions)
@@ -140,7 +149,7 @@ async function release(orderId, existingConn = null) {
       `INSERT INTO wallet_transactions
         (wallet_id, type, amount, balance_after, reference_type, reference_id, note)
        VALUES (?, 'sale_proceeds', ?, ?, 'order', ?, ?)`,
-      [sellerWallet.id, netSellerAmount, balanceAfter, orderId, `รายได้จากคำสั่งซื้อ #${orderId} (หักค่าธรรมเนียม ${feeAmount} บาท)`]
+      [sellerWallet.id, netSellerDecimal, balanceAfterDecimal, orderId, `รายได้จากคำสั่งซื้อ #${orderId} (หักค่าธรรมเนียม ${feeDecimal} บาท)`]
     );
 
     // 7. อัปเดตสถานะ Escrow เป็น 'released'
@@ -148,7 +157,7 @@ async function release(orderId, existingConn = null) {
       `UPDATE escrows
        SET status = 'released', fee_amount = ?, net_amount = ?, released_at = UTC_TIMESTAMP()
        WHERE id = ?`,
-      [feeAmount, netSellerAmount, escrow.id]
+      [feeDecimal, netSellerDecimal, escrow.id]
     );
 
     // 8. อัปเดต Order เป็น 'completed'
@@ -216,7 +225,7 @@ async function refund(orderId, existingConn = null) {
     const buyerId = Number(order.buyer_id);
     const refundAmount = Number(escrow.amount); // คืนเต็มจำนวน (ราคา + ค่าส่ง)
 
-    // 3. คืนเงินเข้า Wallet ของผู้ซื้อ
+    // 3. คืนเงินเข้า Wallet ของผู้ซื้อ (คำนวณแบบ integer satang)
     const [buyerWallets] = await conn.query(
       'SELECT id, balance FROM wallets WHERE user_id = ? FOR UPDATE',
       [buyerId]
@@ -226,12 +235,15 @@ async function refund(orderId, existingConn = null) {
     }
 
     const buyerWallet = buyerWallets[0];
-    const balanceBefore = Number(buyerWallet.balance);
-    const balanceAfter = balanceBefore + refundAmount;
+    const balanceBeforeSatang = toSatang(buyerWallet.balance);
+    const refundSatang = toSatang(escrow.amount); // คืนเต็มจำนวน (ราคา + ค่าส่ง)
+    const balanceAfterSatang = balanceBeforeSatang + refundSatang;
+    const balanceAfterDecimal = toDecimal(balanceAfterSatang);
+    const refundDecimal = toDecimal(refundSatang);
 
     await conn.query(
       'UPDATE wallets SET balance = ? WHERE id = ?',
-      [balanceAfter, buyerWallet.id]
+      [balanceAfterDecimal, buyerWallet.id]
     );
 
     // 4. บันทึกธุรกรรม ledger (wallet_transactions)
@@ -239,7 +251,7 @@ async function refund(orderId, existingConn = null) {
       `INSERT INTO wallet_transactions
         (wallet_id, type, amount, balance_after, reference_type, reference_id, note)
        VALUES (?, 'escrow_refund', ?, ?, 'order', ?, ?)`,
-      [buyerWallet.id, refundAmount, balanceAfter, orderId, `คืนเงินจากคำสั่งซื้อ #${orderId}`]
+      [buyerWallet.id, refundDecimal, balanceAfterDecimal, orderId, `คืนเงินจากคำสั่งซื้อ #${orderId}`]
     );
 
     // 5. อัปเดตสถานะ Escrow เป็น 'refunded'

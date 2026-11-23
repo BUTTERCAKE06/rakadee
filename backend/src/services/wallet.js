@@ -88,16 +88,18 @@ async function getWalletSummary(userId) {
   );
 
   const feeCfg = await settings.feeConfig();
-  let pendingIncome = 0;
+  let pendingSatang = 0;
   for (const row of escrowRows) {
     const fee = calculatePlatformFee(Number(row.item_price), feeCfg);
-    const net = Math.max(0, Number(row.amount) - fee);
-    pendingIncome += net;
+    const itemTotalSatang = Math.round(Number(row.amount) * 100);
+    const feeSatang = Math.round(fee * 100);
+    const netSatang = Math.max(0, itemTotalSatang - feeSatang);
+    pendingSatang += netSatang;
   }
 
   return {
     balance,
-    pendingIncome: Number(pendingIncome.toFixed(2)),
+    pendingIncome: Number((pendingSatang / 100).toFixed(2)),
     currency: 'THB',
   };
 }

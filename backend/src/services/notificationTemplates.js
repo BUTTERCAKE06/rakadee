@@ -119,7 +119,9 @@ const TEMPLATES = {
   FUNDS_RELEASED: {
     group: 'finance',
     title: () => 'ได้รับเงินจากการขาย',
-    message: (d) => `คำสั่งซื้อ ${order(d)} โอนเงิน ${baht(d.amount)} เข้า Mock Wallet แล้ว (หักค่าธรรมเนียมแล้ว)`,
+    message: (d) => (Number(d.amount) > 0
+      ? `คำสั่งซื้อ ${order(d)} โอนเงิน ${baht(d.amount)} เข้า Mock Wallet แล้ว (หักค่าธรรมเนียมแล้ว)`
+      : `คำสั่งซื้อ ${order(d)} เสร็จสมบูรณ์ ยอดสุทธิ ฿0 เพราะค่าธรรมเนียมขั้นต่ำเท่ากับราคาขาย`),
     link: () => '/pages/wallet.html',
   },
   REFUNDED: {

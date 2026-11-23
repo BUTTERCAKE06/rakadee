@@ -574,7 +574,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | `OUTBID`, `AUCTION_EXTENDED`, `AUCTION_ENDING_SOON` | auction | ผู้บิด / Watchlist | เว็บ + อีเมล |
 | `AUCTION_WON`, `AUCTION_LOST` | auction | ผู้ชนะ / ผู้แพ้ / ผู้ขาย | เว็บ + อีเมล |
 | `PAYMENT_DUE_SOON`, `PAYMENT_SUCCESS`, `FUNDS_RELEASED`, `REFUNDED` | finance | ผู้ซื้อ / ผู้ขาย | เว็บ + อีเมล |
-| `SHIPPED`, `SHIP_OVERDUE` | shipping | ผู้ซื้อ | เว็บ + อีเมล |
+| `SHIPPED`, `SHIP_OVERDUE`, `ORDER_COMPLETED` | shipping | ผู้ซื้อ | เว็บ + อีเมล |
 | `ORDER_PAID`, `SHIP_DUE_SOON`, `ORDER_CANCELLED` | shipping | ผู้ขาย | เว็บ + อีเมล |
 | `DISPUTE_OPENED` | shipping | ผู้ขาย, แอดมิน | เว็บ + อีเมล |
 | `DISPUTE_UPDATED` | shipping | ผู้ซื้อ, ผู้ขาย (9.5) | เว็บ + อีเมล |

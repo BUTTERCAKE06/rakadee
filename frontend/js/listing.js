@@ -317,8 +317,9 @@
     });
     if (!check.ok) { setMessage('error', check.error); el.input.focus(); return; }
     // D-17: ราคาสูงผิดปกติ (>= 2 เท่าของราคาปัจจุบัน) ต้องกดยืนยันก่อนส่ง
-    if (A.needsBidConfirm({ amountSatang: check.satang, currentPrice: item.currentPrice, startPrice: item.startPrice })
-      && !(await confirmBigBid(mode, check.satang))) {
+    // Proxy ยืนยันทุกครั้ง: วงเงินผูกพันและลดหรือยกเลิกไม่ได้ (ข้อ 2.1, D-13) กันกดตั้งด้วยราคาขั้นต่ำที่เติมไว้โดยไม่ตั้งใจ
+    const big = A.needsBidConfirm({ amountSatang: check.satang, currentPrice: item.currentPrice, startPrice: item.startPrice });
+    if ((big || mode === 'proxy') && !(await confirmBigBid(mode, check.satang))) {
       el.input.focus();
       return;
     }

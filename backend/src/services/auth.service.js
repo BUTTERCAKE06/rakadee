@@ -149,7 +149,7 @@ async function register(data, ipAddress = '127.0.0.1', userAgent = '') {
   }
 
   if (!validateThaiIdCard(idCardNumber)) {
-    throw new AppError(400, 'INVALID_ID_CARD', 'เลขประจำตัวประชาชนไม่ถูกต้องตามหลักเกณฑ์');
+    throw new AppError(400, 'INVALID_ID_CARD', 'เลขประจำตัวประชาชนไม่ถูกต้อง กรุณาตรวจสอบว่ากรอกเลข 13 หลักตรงตามบัตรจริง');
   }
 
   const idCardHash = hashIdCard(idCardNumber);

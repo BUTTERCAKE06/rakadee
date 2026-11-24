@@ -718,6 +718,8 @@ async function rejectPayment(paymentId, adminId, reason, ipAddress = '127.0.0.1'
       orderId: order.id,
       buyerId: order.buyer_id,
       amount: Number(refundDecimal),
+      canRepay: order.status === 'pending_payment', // ยังชำระใหม่ได้ (Order ยังไม่ถูกยกเลิก)
+      payDueAt: order.status === 'pending_payment' ? newPaymentDueAt.toISOString() : null,
     };
 
     return {
@@ -733,6 +735,9 @@ async function rejectPayment(paymentId, adminId, reason, ipAddress = '127.0.0.1'
       orderId: orderInfo.orderId,
       amount: orderInfo.amount,
       reason: cleanReason,
+      paymentRejected: true, // ข้อความบอกว่าสลิปถูกปฏิเสธ + เหตุผล + ให้ชำระใหม่ (notificationTemplates REFUNDED)
+      canRepay: orderInfo.canRepay,
+      payDueAt: orderInfo.payDueAt,
     }).catch(() => {});
 
     const audit = require('./audit');

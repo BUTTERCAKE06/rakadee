@@ -124,11 +124,19 @@ const TEMPLATES = {
       : `คำสั่งซื้อ ${order(d)} เสร็จสมบูรณ์ ยอดสุทธิ ฿0 เพราะค่าธรรมเนียมขั้นต่ำเท่ากับราคาขาย`),
     link: () => '/pages/wallet.html',
   },
+  // คืนเงิน: Escrow คืนเงิน (ข้อพิพาท / ไม่ส่งของ) หรือแอดมินปฏิเสธสลิป (paymentRejected + reason, canRepay, payDueAt)
   REFUNDED: {
     group: 'finance',
-    title: () => 'ได้รับเงินคืน',
-    message: (d) => `${baht(d.amount)} เข้า Mock Wallet${d.orderId ? ` (${order(d)})` : ''}`,
-    link: () => '/pages/wallet.html',
+    title: (d) => (d.paymentRejected ? 'การชำระเงินถูกปฏิเสธ' : 'ได้รับเงินคืน'),
+    message: (d) => {
+      if (!d.paymentRejected) return `${baht(d.amount)} เข้า Mock Wallet${d.orderId ? ` (${order(d)})` : ''}`;
+      const why = d.reason ? `: ${d.reason}` : '';
+      const next = d.canRepay
+        ? ` กรุณาชำระใหม่${d.payDueAt ? `ก่อน ${thaiTime(d.payDueAt)}` : 'ภายในเวลาที่เหลือ'} ไม่งั้นคำสั่งซื้อจะถูกยกเลิก`
+        : '';
+      return `การชำระ ${order(d)} ถูกปฏิเสธ${why} คืนเงิน ${baht(d.amount)} เข้า Mock Wallet แล้ว${next}`;
+    },
+    link: (d) => (d.paymentRejected && d.canRepay && d.orderId ? `/pages/payment.html?orderId=${d.orderId}` : '/pages/wallet.html'),
   },
   SHIPPED: {
     group: 'shipping',

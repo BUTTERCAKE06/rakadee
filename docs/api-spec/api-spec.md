@@ -546,7 +546,7 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 
 ---
 
-## 11. แจ้งเตือน Dashboard Audit Log ตั้งค่าระบบ (เจ้าของ: PM) — ข้อ 7 (แจ้งเตือน), 8.2-1, 8.2-6, 8.1
+## 11. แจ้งเตือน Dashboard Audit Log ตั้งค่าระบบ Bid Log (เจ้าของ: PM) — ข้อ 7 (แจ้งเตือน), 8.2-1, 8.2-6, 8.1
 
 | # | Method | Path | สิทธิ์ | ทำอะไร |
 | --- | --- | --- | --- | --- |
@@ -560,6 +560,8 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 | 11.8 | GET | `/api/admin/settings` | super_admin | ดูตั้งค่าระบบ |
 | 11.9 | PUT | `/api/admin/settings` | super_admin | แก้ตั้งค่าระบบ |
 | 11.10 | GET | `/api/fee-config` | public | ค่าธรรมเนียมปัจจุบัน (แสดงตัวอย่างรายได้) |
+| 11.11 | GET | `/api/admin/bids` | admin | Bid Log: ใครบิดอะไร (`?categoryId=&q=&listingId=&bidderId=&type=&from=&to=`) |
+| 11.12 | GET | `/api/admin/auction-results` | admin | ผลการประมูล: ใครชนะอะไร (`?categoryId=&q=&result=&from=&to=`) |
 
 **11.1** → `{ items: [{ id, event, group, title, message, linkUrl, isRead, createdAt }], page, limit, total, unreadCount }`
 
@@ -601,6 +603,13 @@ Middleware (SA): `requireAuth` → `requireRole(...)` → `requireActiveAccount(
 - ค่าทั้งหมดอ่านผ่าน `services/settings.js` (`feeConfig()`, `initialCredit()`, `get(key)`) ห้าม hard-code · ค่าธรรมเนียมคิดตามค่าตั้ง ณ เวลา `escrow.release()` · เครดิตแรกเข้ามีผลกับบัญชีที่ยืนยัน OTP หลังบันทึก
 
 **11.10** → `{ percent: 5, min: 20 }` (ตัวเลข อ่านจาก `settings.feeConfig()`) ใช้แสดงผลเท่านั้น ค่าธรรมเนียมจริงคิดตอน `escrow.release()`
+
+**11.11** (อ่านอย่างเดียว ไม่ลง Audit Log) query ทุกตัวไม่บังคับ: `categoryId` (หมวดหลักรวมหมวดย่อย), `q` (ชื่อสินค้า / username / ชื่อที่แสดงของผู้บิด), `listingId`, `bidderId`, `type` (`manual` / `auto` / `buy_now`), `from`, `to` (`YYYY-MM-DD` ตามเวลาไทย), `page`, `limit` (D-11) เรียงใหม่สุดก่อน → `{ items: [{ id, amount, bidType, createdAt, ipAddress, standing, bidder: { id, username, displayName }, listing: { id, title, status, result, currentPrice, category: { id, name, parentName }, seller: { id, username, displayName } } }], page, limit, total, summary: { bidders, listings } }`
+- `bidType` ของ Proxy แสดงเป็น `"auto"` เหมือน 5.3 · `standing` = `"won"` (บิดสุดท้ายของสินค้าที่ปิดแบบ `has_winner` / `buy_now`), `"leading"` (บิดสุดท้ายของสินค้าที่ยัง active) หรือ `null`
+- ไม่ส่งวงเงิน Proxy (`max_amount`) ให้แอดมิน (ข้อ 0 ข้อมูลอ่อนไหว)
+- Errors: `VALIDATION_ERROR` (`type` / id / วันที่ผิดรูปแบบ)
+
+**11.12** (อ่านอย่างเดียว) เฉพาะสินค้าที่ปิดประมูลแล้ว (`status = ended`) query: `categoryId`, `q` (ชื่อสินค้า / ผู้ขาย / ผู้ชนะ), `result` (`has_winner` / `buy_now` / `below_reserve` / `no_bid`), `from`, `to` (นับจาก `closed_at`), `page`, `limit` เรียงปิดล่าสุดก่อน → `{ items: [{ listing: { id, title, category: { id, name, parentName } }, seller, winner | null, result, finalPrice, bidCount, bidderCount, closedAt, order: { id, status } | null }], page, limit, total, summary: { hasWinner, buyNow, belowReserve, noBid } }` (`summary` นับตามตัวกรองอื่นยกเว้น `result`) · Errors: `VALIDATION_ERROR`
 
 **รายการ action ของ `audit.log()`:** `SELLER_APPROVE`, `SELLER_REJECT`, `LISTING_APPROVE`, `LISTING_REJECT`, `PAYMENT_APPROVE`, `PAYMENT_REJECT`, `DISPUTE_STATUS`, `DISPUTE_RESOLVE`, `USER_STATUS`, `USER_BAN`, `BLACKLIST_REVOKE`, `FLAG_REVIEW`, `SETTING_UPDATE`
 

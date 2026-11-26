@@ -1,6 +1,7 @@
-// Admin Dashboard + Audit Log (เจ้าของ: PM) — api-spec 11.5–11.7, requirement 8.2-1, 8.2-6
+// Admin Dashboard + Audit Log + Bid Log (เจ้าของ: PM) — api-spec 11.5–11.7, 11.11–11.12, requirement 8.2-1, 8.2-6
 const db = require('../config/db');
 const AppError = require('../utils/AppError');
+const parseId = require('../utils/parseId');
 
 const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000;
 
@@ -250,4 +251,175 @@ async function listAuditLogs(viewer, { adminId, action, targetType, from, to, so
   };
 }
 
-module.exports = { getDashboard, getCharts, listAuditLogs, startOfTodayBangkok, buildLabels };
+// ---------------------------------------------------------------- 11.11 / 11.12 Bid Log (อ่านอย่างเดียว)
+// ข้อมูลจากตาราง bids / listings ของ Auction Engine ไม่แก้ข้อมูลใดๆ จึงไม่ต้องลง Audit Log
+// วงเงิน Proxy (proxy_bids.max_amount) ไม่ส่งออก (ส่งให้เจ้าของ Proxy เท่านั้น api-spec 0)
+
+const BID_TYPES = { manual: 'manual', auto: 'proxy', buy_now: 'buy_now' };
+const BID_TYPE_OUT = { manual: 'manual', proxy: 'auto', buy_now: 'buy_now' };
+const RESULTS = ['has_winner', 'buy_now', 'below_reserve', 'no_bid'];
+
+const likeParam = (q) => `%${String(q).trim().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+// เงื่อนไขร่วม: หมวด (หมวดหลักรวมหมวดย่อย) และคำค้น
+function categoryFilter(where, params, categoryId) {
+  if (!categoryId) return;
+  const id = parseId(categoryId, 'categoryId');
+  where.push('(c.id = ? OR c.parent_id = ?)');
+  params.push(id, id);
+}
+
+function categoryOut(r) {
+  return { id: r.category_id, name: r.category_name, parentName: r.parent_category_name || null };
+}
+
+const person = (id, username, displayName) => (id ? { id, username, displayName: displayName || username } : null);
+
+async function listBids({ categoryId, q, listingId, bidderId, type, from, to, page, limit }) {
+  const where = [];
+  const params = [];
+  categoryFilter(where, params, categoryId);
+  if (listingId) { where.push('b.listing_id = ?'); params.push(parseId(listingId, 'listingId')); }
+  if (bidderId) { where.push('b.bidder_id = ?'); params.push(parseId(bidderId, 'bidderId')); }
+  if (type) {
+    if (!BID_TYPES[type]) {
+      throw new AppError(400, 'VALIDATION_ERROR', 'ประเภทการบิดไม่ถูกต้อง', { type: 'ใช้ manual, auto หรือ buy_now' });
+    }
+    where.push('b.bid_type = ?');
+    params.push(BID_TYPES[type]);
+  }
+  if (q && String(q).trim()) {
+    const like = likeParam(q);
+    where.push('(l.title LIKE ? OR u.username LIKE ? OR u.display_name LIKE ?)');
+    params.push(like, like, like);
+  }
+  if (from) { where.push('b.created_at >= ?'); params.push(bangkokDate(from, 'from', false)); }
+  if (to) { where.push('b.created_at < ?'); params.push(bangkokDate(to, 'to', true)); }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const fromSql = `FROM bids b
+       JOIN listings l ON l.id = b.listing_id
+       JOIN categories c ON c.id = l.category_id
+       LEFT JOIN categories pc ON pc.id = c.parent_id
+       JOIN users u ON u.id = b.bidder_id`;
+
+  const [[sum]] = await db.pool.query(
+    `SELECT COUNT(*) AS total, COUNT(DISTINCT b.bidder_id) AS bidders, COUNT(DISTINCT b.listing_id) AS listings ${fromSql} ${whereSql}`,
+    params,
+  );
+  const [rows] = await db.pool.query(
+    `SELECT b.id, b.listing_id, b.bidder_id, b.amount, b.bid_type, b.ip_address, b.created_at,
+            u.username, u.display_name,
+            l.title, l.status, l.result, l.current_price, l.winner_id, l.category_id,
+            c.name AS category_name, pc.name AS parent_category_name,
+            s.id AS seller_id, s.username AS seller_username, s.display_name AS seller_display_name,
+            (SELECT MAX(b2.id) FROM bids b2 WHERE b2.listing_id = b.listing_id) AS last_bid_id
+       ${fromSql}
+       JOIN users s ON s.id = l.seller_id
+       ${whereSql}
+      ORDER BY b.created_at DESC, b.id DESC
+      LIMIT ? OFFSET ?`,
+    [...params, limit, (page - 1) * limit],
+  );
+  return {
+    items: rows.map((r) => {
+      const isLast = String(r.id) === String(r.last_bid_id);
+      let standing = null;
+      if (isLast && r.status === 'active') standing = 'leading';
+      else if (isLast && r.status === 'ended' && (r.result === 'has_winner' || r.result === 'buy_now')) standing = 'won';
+      return {
+        id: r.id,
+        amount: money(r.amount),
+        bidType: BID_TYPE_OUT[r.bid_type],
+        createdAt: r.created_at,
+        ipAddress: r.ip_address,
+        standing,
+        bidder: person(r.bidder_id, r.username, r.display_name),
+        listing: {
+          id: r.listing_id,
+          title: r.title,
+          status: r.status,
+          result: r.result,
+          currentPrice: r.current_price === null ? null : money(r.current_price),
+          category: categoryOut(r),
+          seller: person(r.seller_id, r.seller_username, r.seller_display_name),
+        },
+      };
+    }),
+    page,
+    limit,
+    total: Number(sum.total),
+    summary: { bidders: Number(sum.bidders), listings: Number(sum.listings) },
+  };
+}
+
+async function listAuctionResults({ categoryId, q, result, from, to, page, limit }) {
+  const where = ["l.status = 'ended'", 'l.result IS NOT NULL'];
+  const params = [];
+  categoryFilter(where, params, categoryId);
+  if (q && String(q).trim()) {
+    const like = likeParam(q);
+    where.push('(l.title LIKE ? OR s.username LIKE ? OR s.display_name LIKE ? OR w.username LIKE ? OR w.display_name LIKE ?)');
+    params.push(like, like, like, like, like);
+  }
+  if (from) { where.push('l.closed_at >= ?'); params.push(bangkokDate(from, 'from', false)); }
+  if (to) { where.push('l.closed_at < ?'); params.push(bangkokDate(to, 'to', true)); }
+  const fromSql = `FROM listings l
+       JOIN categories c ON c.id = l.category_id
+       LEFT JOIN categories pc ON pc.id = c.parent_id
+       JOIN users s ON s.id = l.seller_id
+       LEFT JOIN users w ON w.id = l.winner_id`;
+  // สรุปแยกตามผล (ไม่รวมตัวกรองผล เพื่อให้เห็นจำนวนของทุกแท็บ)
+  const [[sum]] = await db.pool.query(
+    `SELECT SUM(l.result = 'has_winner') AS hasWinner, SUM(l.result = 'buy_now') AS buyNow,
+            SUM(l.result = 'below_reserve') AS belowReserve, SUM(l.result = 'no_bid') AS noBid
+       ${fromSql} WHERE ${where.join(' AND ')}`,
+    params,
+  );
+  if (result) {
+    if (!RESULTS.includes(result)) {
+      throw new AppError(400, 'VALIDATION_ERROR', 'ผลการประมูลไม่ถูกต้อง', { result: 'ใช้ has_winner, buy_now, below_reserve หรือ no_bid' });
+    }
+    where.push('l.result = ?');
+    params.push(result);
+  }
+  const whereSql = `WHERE ${where.join(' AND ')}`;
+  const [[{ total }]] = await db.pool.query(`SELECT COUNT(*) AS total ${fromSql} ${whereSql}`, params);
+  const [rows] = await db.pool.query(
+    `SELECT l.id, l.title, l.result, l.current_price, l.bid_count, l.closed_at, l.category_id,
+            c.name AS category_name, pc.name AS parent_category_name,
+            s.id AS seller_id, s.username AS seller_username, s.display_name AS seller_display_name,
+            w.id AS winner_id, w.username AS winner_username, w.display_name AS winner_display_name,
+            (SELECT COUNT(DISTINCT b.bidder_id) FROM bids b WHERE b.listing_id = l.id) AS bidder_count,
+            o.id AS order_id, o.status AS order_status
+       ${fromSql}
+       LEFT JOIN orders o ON o.listing_id = l.id
+       ${whereSql}
+      ORDER BY l.closed_at DESC, l.id DESC
+      LIMIT ? OFFSET ?`,
+    [...params, limit, (page - 1) * limit],
+  );
+  return {
+    items: rows.map((r) => ({
+      listing: { id: r.id, title: r.title, category: categoryOut(r) },
+      seller: person(r.seller_id, r.seller_username, r.seller_display_name),
+      winner: person(r.winner_id, r.winner_username, r.winner_display_name),
+      result: r.result,
+      finalPrice: r.current_price === null ? null : money(r.current_price),
+      bidCount: Number(r.bid_count),
+      bidderCount: Number(r.bidder_count),
+      closedAt: r.closed_at,
+      order: r.order_id ? { id: r.order_id, status: r.order_status } : null,
+    })),
+    page,
+    limit,
+    total: Number(total),
+    summary: {
+      hasWinner: Number(sum.hasWinner || 0),
+      buyNow: Number(sum.buyNow || 0),
+      belowReserve: Number(sum.belowReserve || 0),
+      noBid: Number(sum.noBid || 0),
+    },
+  };
+}
+
+module.exports = { getDashboard, getCharts, listAuditLogs, listBids, listAuctionResults, startOfTodayBangkok, buildLabels };

@@ -35,6 +35,6 @@ router.use('/notifications', require('./notification.routes')); // PM: 11.1–11
 // PM: 11.10 ค่าธรรมเนียมปัจจุบัน (public) ใช้แสดงตัวอย่างรายได้ในหน้าลงสินค้า / ช่วยเหลือ
 router.get('/fee-config', asyncHandler(async (req, res) => ok(res, await require('../services/settings').feeConfig())));
 router.use('/users', require('./user.routes'));                 // PM: 2.1–2.11
-router.use('/admin', require('./admin.routes'));                // PM: 11.5, 11.7 (แต่ละคนเพิ่ม route แอดมินของโมดูลตัวเองแยกไฟล์)
+router.use('/admin', require('./admin.routes'));                // PM: 11.5–11.9, 11.11–11.12 (แต่ละคนเพิ่ม route แอดมินของโมดูลตัวเองแยกไฟล์)
 
 module.exports = router;

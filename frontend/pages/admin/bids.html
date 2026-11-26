@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>การประมูล — Admin | Rakadee</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+    .filters .form-group { margin: 0; }
+    .filters input[type="search"] { min-width: 220px; }
+    .table-wrap { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); overflow-x: auto; }
+    .table-wrap table { margin: 0; min-width: 940px; }
+    .table-wrap th { white-space: nowrap; }
+    td.person { white-space: nowrap; }
+    td.listing { min-width: 240px; }
+    .pager { display: flex; justify-content: center; gap: 8px; margin-top: 16px; align-items: center; }
+    [hidden] { display: none !important; }
+    .summary { margin: 0 0 12px; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 12px; border-radius: 999px; background: var(--color-bg); border: 1px solid var(--color-primary); color: var(--color-primary); font-size: 13px; }
+    .chip button { border: 0; background: none; color: inherit; cursor: pointer; font-size: 15px; line-height: 1; padding: 0 4px; }
+    .pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .pills button { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-surface); cursor: pointer; font: inherit; font-size: 14px; }
+    .pills button:hover { border-color: var(--color-primary); }
+    .pills button.active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+    .link-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--color-primary); cursor: pointer; text-align: left; }
+    .link-btn:hover { text-decoration: underline; }
+    .sub { color: var(--color-muted); font-size: 12.5px; }
+    td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    td.nowrap { white-space: nowrap; }
+  </style>
+</head>
+<body class="admin-page">
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+
+  <div class="admin-main">
+    <div class="admin-topbar" id="admin-topbar" data-title="การประมูล (Bid Log)"></div>
+
+    <main class="admin-content">
+      <div id="alert"></div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-tab="bids" class="active" aria-selected="true">ประวัติการบิด</button>
+        <button type="button" role="tab" data-tab="results" aria-selected="false">ผลการประมูล</button>
+      </div>
+
+      <form class="filters" id="filters">
+        <div class="form-group">
+          <label for="categoryId">หมวดหมู่</label>
+          <select id="categoryId" name="categoryId"><option value="">ทุกหมวด</option></select>
+        </div>
+        <div class="form-group">
+          <label for="q" id="q-label">ค้นหา</label>
+          <input type="search" id="q" name="q" maxlength="100">
+        </div>
+        <div class="form-group" id="type-group">
+          <label for="type">ประเภทการบิด</label>
+          <select id="type" name="type">
+            <option value="">ทั้งหมด</option>
+            <option value="manual">บิดเอง</option>
+            <option value="auto">ระบบบิดแทน (Proxy)</option>
+            <option value="buy_now">ซื้อทันที</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="from">ตั้งแต่วันที่</label>
+          <input type="date" id="from" name="from">
+        </div>
+        <div class="form-group">
+          <label for="to">ถึงวันที่</label>
+          <input type="date" id="to" name="to">
+        </div>
+        <button type="submit" class="btn btn-primary">กรอง</button>
+        <button type="reset" class="btn">ล้างตัวกรอง</button>
+      </form>
+
+      <div class="chips" id="chips"></div>
+      <div class="pills" id="result-pills" hidden></div>
+      <p class="muted summary" id="summary"></p>
+
+      <div class="table-wrap">
+        <table>
+          <thead id="thead"></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="pager"></div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin/admin-shell.js"></script>
+  <script src="/js/admin/bids.js"></script>
+</body>
+</html>

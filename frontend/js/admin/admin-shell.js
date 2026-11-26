@@ -10,7 +10,8 @@ const ADMIN_NAV = [
   { href: '/pages/admin/listings.html', label: 'สินค้า', ready: true, match: ['/pages/admin/listing-detail.html'] },
   // เพิ่มจากภาพ: คำแนะนำอาจารย์ข้อ 2 (D-18)
   { href: '/pages/admin/seller-applications.html', label: 'ตรวจร้านค้า', ready: true, match: ['/pages/admin/seller-application.html', '/pages/admin/sellers.html'] },
-  // เมนู "การประมูล" และ "สิทธิ์" ในแบบ UI ซ่อนไว้ เพราะไม่อยู่ใน requirement 8.2 และ api-spec (ตัดสินโดย PM 22 พ.ย. 2569)
+  // เมนู "สิทธิ์" ในแบบ UI ซ่อนไว้ เพราะไม่อยู่ใน requirement 8.2 และ api-spec (ตัดสินโดย PM 22 พ.ย. 2569)
+  { href: '/pages/admin/bids.html', label: 'การประมูล', ready: true },   // PM Bid Log ใครบิดอะไร / ใครชนะอะไร (API 11.11–11.12, เพิ่ม 26 พ.ย. 2569)
   { href: '/pages/admin/orders.html', label: 'คำสั่งซื้อ', ready: true },   // PM (API 8.7)
   { href: '/pages/admin/payments.html', label: 'การเงิน', ready: true },    // SA ตรวจสอบการชำระเงิน (API 7.8–7.11)
   { href: '/pages/admin/disputes.html', label: 'ข้อพิพาท', ready: true, match: ['/pages/admin/dispute-detail.html'] },
